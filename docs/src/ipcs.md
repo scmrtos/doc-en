@@ -1,28 +1,25 @@
-# Interprocess Communication Services
-
-----
+# Interprocess<br>Communication<br>Services
 
 ## Introduction
 
-Starting with version 4, **scmRTOS** employs a fundamentally different mechanism for implementing interprocess communication services compared to previous versions. Previously, each service class was developed individually and had no connection to the others, and to access kernel resources, service classes were declared as "friends" of the kernel. This approach did not allow for code reuse[^1] and offered no possibility to extend the set of services, which led to the decision to abandon it and design a variant free from both shortcomings.
+Starting with version 4, **scmRTOS** employs a fundamentally different mechanism for implementing interprocess communication services compared to previous versions. Previously, each service class was developed individually with no relation to the others, and service classes were declared as "friends" of the kernel to access its resources. This approach prevented code reuse[^1] and made it impossible to extend the set of services, leading to its abandonment in favor of a design free from both drawbacks.
 
-[^1]: Since interprocess communication services perform similar actions when interacting with kernel resources, they contain, in places, nearly identical code.
+[^1]: Since interprocess communication services perform similar operations when interacting with kernel resources, they contained nearly identical code in several places.
 
-The implementation is based on the concept of extending OS functionality by defining extension classes through inheritance from `TKernelAgent` (see ["TKernelAgent and Extensions"](kernel.md#kernel-agent)).
+The implementation is based on the concept of extending OS functionality through extension classes derived from `TKernelAgent` (see ["TKernelAgent and Extensions"](kernel.md#kernel-agent)).
 
-The key class for building interprocess communication services is the `TService` class, which implements the common functionality for all service classes. All of them are descendants of `TService`. This applies both to the standard set of services included in the OS distribution and to those developed[^2] as extensions to the standard range of services.
+The key class for building interprocess communication services is `TService`, which implements the common functionality shared by all service classes. All service classes—both those included in the standard **scmRTOS** distribution and those developed[^2] as extensions to the standard set—are derived from `TService`.
 
-[^2]: Or can be developed by the user for their project's needs.
+[^2]: Or that can be developed by the user to meet the needs of their project.
 
-The interprocess communication services included in scmRTOS are:
+The interprocess communication services included in **scmRTOS** are:
 
-*   `OS::TEventFlag`;
-*   `OS::TMutex`;
-*   `OS::message`;
-*   `OS::channel`;
+* `OS::TEventFlag`;
+* `OS::TMutex`;
+* `OS::message`;
+* `OS::channel`;
 
 ----
-
 ## TService
 
 ### Class Definition
@@ -30,1085 +27,964 @@ The interprocess communication services included in scmRTOS are:
 The code for the base class used to build service types:
 
 ```cpp
-01    class TService : protected TKernelAgent
-02    {
-03    protected:
-04        TService() : TKernelAgent() { }
+01 class TService : protected TKernelAgent
+02 {
+03 protected:
+04     TService() : TKernelAgent() { }
 05
-06        INLINE static TProcessMap  cur_proc_prio_tag()  { return get_prio_tag(cur_proc_priority()); }
-07        INLINE static TProcessMap  highest_prio_tag(TProcessMap map)
-08        {
-09        #if scmRTOS_PRIORITY_ORDER == 0
-10            return map & (~static_cast<unsigned>(map) + 1);   // Isolate rightmost 1-bit.
-11        #else   // scmRTOS_PRIORITY_ORDER == 1
-12            return get_prio_tag(highest_priority(map));
-13        #endif
-14        }
+06     INLINE static TProcessMap cur_proc_prio_tag() { return get_prio_tag(cur_proc_priority()); }
+07     INLINE static TProcessMap highest_prio_tag(TProcessMap map)
+08     {
+09 #if scmRTOS_PRIORITY_ORDER == 0
+10         return map & (~static_cast<unsigned>(map) + 1); // Isolate rightmost 1-bit.
+11 #else // scmRTOS_PRIORITY_ORDER == 1
+12         return get_prio_tag(highest_priority(map));
+13 #endif
+14     }
 15
-16        //----------------------------------------------------------------------
-17        //
-18        //   Base API
-19        //
+16     //----------------------------------------------------------------------
+17     //
+18     // Base API
+19     //
 20
-21        // add prio_tag proc to waiters map, reschedule
-22        INLINE void suspend(TProcessMap volatile & waiters_map);
+21     // add prio_tag proc to waiters map, reschedule
+22     INLINE void suspend(TProcessMap volatile & waiters_map);
 23
-24        // returns false if waked-up by timeout or TBaseProcess::wake_up() | force_wake_up()
-25        INLINE static bool is_timeouted(TProcessMap volatile & waiters_map);
+24     // returns false if waked-up by timeout or TBaseProcess::wake_up() | force_wake_up()
+25     INLINE static bool is_timeouted(TProcessMap volatile & waiters_map);
 26
-27        // wake-up all processes from waiters map
-28        // return false if no one process was waked-up
-29               static bool resume_all     (TProcessMap volatile & waiters_map);
-30        INLINE static bool resume_all_isr (TProcessMap volatile & waiters_map);
+27     // wake-up all processes from waiters map
+28     // return false if no one process was waked-up
+29     static bool resume_all (TProcessMap volatile & waiters_map);
+30     INLINE static bool resume_all_isr (TProcessMap volatile & waiters_map);
 31
-32        // wake-up next ready (most priority) process from waiters map if any
-33        // return false if no one process was waked-up
-34               static bool resume_next_ready     (TProcessMap volatile & waiters_map);
-35        INLINE static bool resume_next_ready_isr (TProcessMap volatile & waiters_map);
-36    };
-```        
-/// Caption
-Listing 1. TService
+32     // wake-up next ready (most priority) process from waiters map if any
+33     // return false if no one process was waked-up
+34     static bool resume_next_ready (TProcessMap volatile & waiters_map);
+35     INLINE static bool resume_next_ready_isr (TProcessMap volatile & waiters_map);
+36 };
+```
+/// Caption  
+Listing 1. TService  
 ///
 
-Similar to its ancestor class `TKernelAgent`, the `TService` class does not allow objects of its own type to be created: its purpose is to provide a base for building specific types—interprocess communication services. The interface of this class consists of a set of functions that express the common actions of any service class within the context of control transfer between processes. Logically, these functions can be divided into two parts: core functions and utility functions.
+Like its parent class `TKernelAgent`, the `TService` class does not allow instantiation of objects of its own type: its purpose is to provide a base for constructing concrete types—interprocess communication services. The interface of this class consists of a set of functions that express the common actions performed by any service class in the context of control transfer between processes. Logically, these functions can be divided into two groups: core and auxiliary.
 
-The utility functions are:
+The auxiliary functions include:
 
-1.  `TService::cur_proc_prio_tag()`. Returns the tag[^3] corresponding to the currently active process. This tag is actively used by the core service functions to record the identifiers[^4] of processes when placing the current process into a waiting state.
-2.  `TService::highest_prio_tag()`. Returns the tag of the highest-priority process from the process map passed as an argument. It is used primarily to obtain the identifier (of the process) from the process map of a service object, corresponding to the process that should be transitioned to the ready state.
+1. `TService::cur_proc_prio_tag()`. Returns the tag[^3] corresponding to the currently active process. This tag is actively used by the core service functions to record process identifiers[^4] when placing the current process into a waiting state.
+2. `TService::highest_prio_tag()`. Returns the tag of the highest-priority process from the process map passed as an argument. It is primarily used to obtain the identifier (of the process) from those recorded in the service object's process map, identifying the process that should be marked ready to run.
 
-[^3]: A process tag is technically a mask of type `TProcessMap` with only one non-zero bit. The position of this bit in the mask corresponds to the process priority. Process tags are used for manipulating `TProcessMap` objects, which define the ready/not-ready state of processes, and also serve to record process tags.
-[^4]: Along with the process priority number, the tag can also serve as a process identifier—there is a one-to-one correspondence between the priority number and the process tag. Each type of identifier has advantages in terms of efficiency in specific situations, so both types are used extensively in the OS code.
+[^3]: A process tag is technically a mask of type `TProcessMap` with only one non-zero bit. The position of this bit in the mask corresponds to the process priority. Process tags are used to manipulate `TProcessMap` objects, which represent process readiness/unreadiness for execution, as well as to record process tags.
+[^4]: Alongside the process priority number, the tag can also serve as a process identifier—there is a one-to-one correspondence between a process priority and its tag. Each identifier type has efficiency advantages in specific situations, so both are extensively used in the OS code.
 
 The core functions are:
 
-1.  `TService::suspend()`. Transfers the process to a not-ready state, records the process identifier in the service's process map, and calls the OS scheduler. This function forms the basis of the service member functions used for waiting for an event (`wait()`, `pop()`, `read()`) or actions that might cause waiting for a resource to be released (`lock()`, `push()`, `write()`).
-2.  `TService::is_timeouted()`. This function returns `false` if the process was transitioned to the ready state by calling a service member function; however, if the process was transitioned to the ready state due to a timeout[^5] or forcibly using the `TBaseProcess` member functions `wake_up()` and `force_wake_up()`, then the function returns `true`. The result of this function is used to determine whether the process received the event (resource release) it was waiting for or not.
-3.  `TService::resume_all()`. This function checks for the presence of processes "recorded" in the service's process map but currently in a not-ready state[^6]; if such processes exist, all of them are transitioned to the ready state and the scheduler is called. In this case, the function returns `true`; otherwise, it returns `false`.
-4.  `TService::resume_next_ready()`. This function performs actions similar to the `resume_all()` function described above, with the difference that if there are waiting processes, not all of them are transitioned to the ready state, but only one—the highest-priority one.
+1. `TService::suspend()`. Places the process into an unready state, records the process identifier in the service's process map, and invokes the OS scheduler. This function forms the basis for service member functions used to wait for an event (`wait()`, `pop()`, `read()`) or for actions that may involve waiting for resource release (`lock()`, `push()`, `write()`).
+2. `TService::is_timeouted()`. Returns `false` if the process was marked ready via a service member function call; returns `true` if the process was marked ready due to timeout expiration[^5] or forcibly via `TBaseProcess` member functions `wake_up()` or `force_wake_up()`. The result is used to determine whether the process successfully waited for the expected event (or resource release) or not.
+3. `TService::resume_all()`. Checks for processes recorded in the service's process map that are in an unready state[^6]; if any exist, all are marked ready and the scheduler is invoked. The function returns `true` in this case, otherwise `false`.
+4. `TService::resume_next_ready()`. Performs actions similar to `resume_all()`, but with the difference that, when waiting processes are present, only one—the highest-priority—is marked ready instead of all.
 
-[^5]: In other words, "awakened" in the system timer interrupt handler.
-[^6]: That is, processes whose waiting state has not been interrupted by a timeout and/or forcibly using `TBaseProcess::wake_up()` and `TBaseProcess::force_wake_up()`.
+[^5]: In other words, "awakened" in the system timer handler.
+[^6]: I.e., processes whose waiting state was not interrupted by timeout and/or forcibly via `TBaseProcess::wake_up()` or `TBaseProcess::force_wake_up()`.
 
-For the `resume_all()` and `resume_next_ready()` functions, there are versions optimized for use inside interrupt handlers—these are `resume_all_isr()` and `resume_next_ready_isr()`. In purpose and meaning, they are similar to the main variants[^7]; the key difference is that they do not call the scheduler.
+For the `resume_all()` and `resume_next_ready()` functions, there are versions optimized for use inside interrupt handlers—`resume_all_isr()` and `resume_next_ready_isr()`. In purpose and semantics, they resemble the main variants[^7]; the primary difference is that they do not invoke the scheduler.
 
-[^7]: Therefore, a full description of them is not provided.
+[^7]: Therefore, a full description is not provided.
 
 ### Usage
 
-#### Preliminary Remarks
+#### Preliminary Notes
 
-Any service class is created from `TService` through inheritance. To illustrate the usage of `TService` and the creation of a service class based on it, we will examine one of the standard interprocess communication services—`TEventFlag`:
+Any service class is created by inheriting from `TService`. As an example of using `TService` and building a service class upon it, one of the standard interprocess communication services—`TEventFlag`—will be examined:
 
 ```cpp
 class TEventFlag : public TService { ... }
 ```
 
-The service class `TEventFlag` itself will be described in detail later. For the continuity of the narrative at this point, it should be noted that this interprocess communication service is used to synchronize the work of processes in accordance with occurring events. The main idea of its usage is: one process waits for an event using the class member function `TEventFlag::wait()`, while another process[^8], upon the occurrence of an event that should be handled by the waiting process, signals the flag using the member function `TEventFlag::signal()`.
+The `TEventFlag` service class itself will be described in detail later; for narrative continuity, it should be noted here that this interprocess communication service is used to synchronize process operation with occurring events. The basic usage idea: one process waits for an event using the `TEventFlag::wait()` member function, while another process[^8] signals the flag using `TEventFlag::signal()` when the event that needs handling in the waiting process occurs.
 
-[^8]: Or an interrupt handler—depending on the source of the events. For interrupt handlers, there is a special version of the function that signals the flag, but in the context of the current description, this nuance is omitted as non-essential.
+[^8]: Or an interrupt handler—depending on the event source. A special version of the signaling function exists for interrupt handlers, but in the current context this detail is immaterial and therefore omitted.
 
-Given the above, the main focus when examining the usage example will be on these two functions, as they carry the primary semantic load of the service class[^9], and its development essentially boils down to the development of such functions.
+Given the above, primary attention in this example will focus on these two functions, as they carry the main semantic load of the service class[^9] and its development largely reduces to implementing such functions.
 
-[^9]: The rest of its representation is auxiliary in nature and serves to give completeness to the class and improve its user characteristics.
+[^9]: The rest of its interface is auxiliary, serving to complete the class and improve its usability.
 
-#### Requirements for the Functions of the Class Being Developed
+#### Requirements for the Developed Class Functions
 
-Requirements for the event flag waiting function. The function must check whether the event has occurred at the moment of the function call. If the event has not occurred, it must be able to wait[^10] for the event either unconditionally or with a timeout condition. If the function returns due to the event, the return value should be `true`; if it returns due to a timeout, the return value should be `false`.
+Requirements for the event flag wait function: The function must check whether the event has already occurred at the moment of call and, if not, be capable of waiting[^10] for the event either unconditionally or with a timeout condition. Return `true` if exiting due to the event; return `false` if exiting due to timeout.
 
-[^10]: I.e., yield control to the system kernel and remain in passive waiting.
+[^10]: I.e., yield control to the kernel and remain in passive waiting.
 
-Requirements for the event flag signaling function. The function must transition all processes waiting for the event flag to the ready state and transfer control to the scheduler.
+Requirements for the event flag signal function: The function must mark all processes waiting for the event flag as ready to run and transfer control to the scheduler.
 
 #### Implementation
 
-Inside the member function `wait()` (see "Listing 2. Function TEventFlag::wait()"), the first step is to check if the event has already been signaled. If it has, the function returns `true`. If the event has not been signaled (i.e., it needs to be waited for), preparatory actions are performed—in particular, the waiting timeout value is written to the `Timeout` variable of the current process, and the `suspend()` function, defined in the base class `TService`, is called. This function writes the tag of the current process into the process map of the event flag object (passed to `suspend()` as an argument), transitions this process to a not-ready state, and yields control to other processes by calling the scheduler.
+Inside the `wait()` member function—see "Listing 2. TEventFlag::wait()"—the first step is to check whether the event has already been signaled; if so, the function returns `true`. If the event has not been signaled (i.e., it needs to be awaited), preparatory actions are performed—in particular, the wait timeout value is written to the current process's `Timeout` variable, and the `suspend()` function defined in the base class `TService` is called. This function records the current process tag in the event flag object's process map (passed as an argument to `suspend()`), marks the process unready, and yields control to other processes by invoking the scheduler.
 
-Upon returning from `suspend()`, which means this process has been transitioned back to the ready state, a check is performed to determine what caused the "wake-up" of this process. This is done by calling the `is_timeouted()` function. It returns `false` if the process was "awakened" via a call to `TEventFlag::signal()`—i.e., the awaited event occurred (and no timeout happened). It returns `true` if the process "wake-up" occurred due to the expiration of the timeout specified in the `TEventFlag::wait()` argument, or if it was forced.
+Upon return from `suspend()`—meaning the process has been marked ready—a check determines the source of the awakening. This is done by calling `is_timeouted()`, which returns `false` if the process was awakened via `TEventFlag::signal()` (i.e., the expected event occurred without timeout) and `true` if awakening occurred due to the timeout specified in the `TEventFlag::wait()` argument or forcibly.
 
-This logic of the `TEventFlag::wait()` member function allows it to be effectively used in user code when organizing process work synchronized with the occurrence of required events[^11]. Moreover, the implementation code of this function is simple and transparent.
+This logic for the `TEventFlag::wait()` member function enables efficient use in user code when organizing process operation synchronized with required events[^11], while keeping the implementation code simple and transparent.
 
-[^11]: Including when such events do not occur within the specified time interval.
+[^11]: Including cases where the events do not occur within the specified time interval.
 
 ```cpp
-01    bool OS::TEventFlag::wait(timeout_t timeout)
-02    {
-03        TCritSect cs;
-04   
-05        if(Value)                         // if flag already signaled
-06        {
-07            Value = efOff;                // clear flag
-08            return true;
-09        }
-10        else
-11        {
-12            cur_proc_timeout() = timeout;
-13   
-14            suspend(ProcessMap);
-15   
-16            if(is_timeouted(ProcessMap))
-17                return false;            // waked up by timeout or by externals
-18   
-19            cur_proc_timeout() = 0;
-20            return true;                 // otherwise waked up by signal() or signal_isr()
-21        }
-22    }
+01 bool OS::TEventFlag::wait(timeout_t timeout)
+02 {
+03     TCritSect cs;
+04
+05     if(Value) // if flag already signaled
+06     {
+07         Value = efOff; // clear flag
+08         return true;
+09     }
+10     else
+11     {
+12         cur_proc_timeout() = timeout;
+13
+14         suspend(ProcessMap);
+15
+16         if(is_timeouted(ProcessMap))
+17             return false; // waked up by timeout or by externals
+18
+19         cur_proc_timeout() = 0;
+20         return true; // otherwise waked up by signal() or signal_isr()
+21     }
+22 }
 ```
-/// Caption
-Listing 2. Function TEventFlag::wait()
+
+/// Caption  
+Listing 2. The TEventFlag::wait() Function  
 ///
 
 ```cpp
-1    void OS::TEventFlag::signal()
-2    {
-3        TCritSect cs;
-4        if(!resume_all(ProcessMap))   // if no one process was waiting for flag
-5            Value = efOn;
-6    }
+1 void OS::TEventFlag::signal()
+2 {
+3     TCritSect cs;
+4     if(!resume_all(ProcessMap)) // if no one process was waiting for flag
+5         Value = efOn;
+6 }
 ```
-/// Caption
-Listing 3. Function TEventFlag::signal()
+
+/// Caption  
+Listing 3. The TEventFlag::signal() Function  
 ///
 
-The code for the `TEventFlag::signal()` function (see "Listing 3. Function TEventFlag::signal()") is extremely simple: inside it, all processes waiting for this event flag are transitioned to the ready state, and rescheduling is performed. If no such processes were found, the internal flag variable `Value` is set to `efOn` (true), which means the event occurred but hasn't been handled by anyone yet.
+The code for `TEventFlag::signal()`—see "Listing 3. TEventFlag::signal()"—is extremely simple: it marks all processes waiting for this event flag as ready and performs rescheduling. If none were waiting, the internal event flag variable `efOn` is set to `true`, indicating that the event occurred but has not yet been handled.
 
-Any interprocess communication service can be designed and defined in a similar manner. During its development, it is only necessary to have a clear understanding of what the member functions of the `TService` class do and to use them appropriately.
+Any interprocess communication service can be designed and implemented in a similar manner. During development, it is only necessary to clearly understand what the `TService` member functions do and use them appropriately.
 
 ----
 
 ## OS::TEventFlag
 
-During program execution, there is often a need for synchronization between processes. For example, one of the processes may need to wait for an event to perform its work. It can handle this in different ways: it can simply poll a global flag in a loop or do the same with some periodicity—i.e., poll, "go to sleep" with a timeout, "wake up," poll again, etc. The first method is bad because all processes with lower priority will not gain control, as due to their lower priorities, they cannot preempt the process polling the global flag in a loop.
+In program execution, it is often necessary to synchronize processes. For example, one process must wait for an event before continuing its work. This can be handled in various ways: the process might continuously poll a global flag in a tight loop, or it could poll periodically—check the flag, sleep with a timeout, wake up, check again, and so on. The first approach is poor because the polling process, due to its tight loop, prevents lower-priority processes from receiving any CPU time—they cannot preempt the polling process despite their lower priorities.
 
-The second method is also bad—the polling period becomes quite large (i.e., time resolution is low), and during polling, the process will occupy the CPU with context switches, even though it is unknown whether the event has occurred.
+The second approach is also suboptimal: the polling period is relatively large (resulting in low temporal resolution), and during each poll the process consumes CPU cycles solely for context switching, even though it is unknown whether the event has occurred.
 
-A proper solution in this situation is to transition the process to a state of waiting for the event and transfer control to the process only when the event occurs.
+A proper solution is to place the process into a waiting state for the event and transfer control to it only when the event actually occurs.
 
-This functionality in scmRTOS is implemented using `OS::TEventFlag` objects (event flag). The class definition is shown in "Listing 4. OS::TEventFlag".
+This functionality in **scmRTOS** is provided by `OS::TEventFlag` objects (event flags). The class definition is shown in "Listing 4. OS::TEventFlag".
 
 ```cpp
-01    class TEventFlag : public TService                                            
-02    {                                                                             
-03    public:                                                                       
-04        enum TValue { efOn = 1, efOff= 0 }; // prefix 'ef' means: "Event Flag"
-05                                                                                  
-06    public:                                                                       
-07        INLINE TEventFlag(TValue init_val = efOff);
-08                                                                                  
-09               bool wait(timeout_t timeout = 0);                                  
-10        INLINE void signal();                                                     
-11        INLINE void clear()       { TCritSect cs; Value = efOff; }                
-12        INLINE void signal_isr();                                                 
-13        INLINE bool is_signaled() { TCritSect cs; return Value == efOn; }         
-14                                                                                  
-15    private:                                                                      
-16        volatile TProcessMap ProcessMap;                                          
-17        volatile TValue      Value;                                               
-18    };                                                                            
+01 class TEventFlag : public TService
+02 {
+03 public:
+04     enum TValue { efOn = 1, efOff= 0 }; // prefix 'ef' means: "Event Flag"
+05
+06 public:
+07     INLINE TEventFlag(TValue init_val = efOff);
+08
+09     bool wait(timeout_t timeout = 0);
+10     INLINE void signal();
+11     INLINE void clear() { TCritSect cs; Value = efOff; }
+12     INLINE void signal_isr();
+13     INLINE bool is_signaled() { TCritSect cs; return Value == efOn; }
+14
+15 private:
+16     volatile TProcessMap ProcessMap;
+17     volatile TValue Value;
+18 };
 ```
-/// Caption
-Listing 4. OS::TEventFlag
+
+/// Caption  
+Listing 4. OS::TEventFlag  
 ///
 
 ### Interface
-
----- 
+----
 
 #### <u>wait</u>
-
 ###### Prototype
-
 ```cpp
 bool OS::TEventFlag::wait(timeout_t timeout);
 ```
 
 ###### Description
+Wait for an event. When `wait()` is called, the following occurs: the flag is checked to see if it is set. If it is, the flag is cleared and the function returns `true`, meaning the event had already occurred at the time of the call. If the flag is not set (i.e., the event has not yet occurred), the process is placed into a waiting state for this flag (event), and control is yielded to the kernel, which reschedules processes and runs the next ready one.
 
-Waits for an event. When the `wait()` function is called, the following occurs: it checks if the flag is set. If it is set, the flag is cleared and the function returns `true`, meaning the event had already occurred at the time of the check. If the flag is not set (i.e., the event has not yet occurred), the process is transitioned to a state of waiting for this flag (event) and control is yielded to the kernel, which, after rescheduling processes, will run the next one.
+If the function is called without an argument (or with an argument of 0), the process will remain waiting until the event flag is signaled by another process or an interrupt handler (using `signal()`) or until it is forcibly awakened using `TBaseProcess::force_wake_up()` (the latter should be used with extreme caution).
 
-If the function is called without arguments (or with an argument equal to 0), the process will remain in the waiting state until the event flag is "signaled" by another process or an interrupt handler (using the `signal()` function) or is brought out of the inactive state using the `TBaseProcess::force_wake_up()` function (in the latter case, extreme caution is required).
+When `wait()` is called without an argument, it always returns `true`. If called with a positive integer argument representing a timeout in system timer ticks, the process waits as described, but if the event flag is not signaled within the specified period, the process is awakened by the timer and the function returns `false`. This implements both unconditional waiting and waiting with timeout.
 
-If `wait()` is called without an argument, it always returns `true`. If the function is called with an argument (an integer greater than 0) specifying the waiting timeout in system timer ticks, the process will wait for the event as in the case of a call without an argument. However, if the event flag is not "signaled" within the specified period, the process will be "awakened" by the timer and the function will return `false`. This implements both unconditional waiting and waiting with a timeout.
-
----- 
-
+----
 #### <u>signal</u>
-
 ###### Prototype
-
 ```cpp
 INLINE void OS::TEventFlag::signal();
 ```
 
 ###### Description
+A process that wishes to notify other processes via a `TEventFlag` object that a particular event has occurred must call `signal()`. This marks all processes waiting for the event as ready to run, and control is immediately transferred to the highest-priority one among them (the others will run in priority order).
 
-A process that wishes to notify other processes via a `TEventFlag` object that a particular event has occurred must call the `signal()` function. As a result, all processes waiting for the specified event will be transitioned to the ready state, and the highest-priority among them will gain control (the others will follow in order of their priorities).
-
----- 
-
+----
 #### <u>signal from ISR</u>
-
 ###### Prototype
-
 ```cpp
 INLINE void OS::TEventFlag::signal_isr();
 ```
 
 ###### Description
+A version of the above function optimized for use in interrupt service routines. The function is inline and uses a special lightweight inline version of the scheduler. This variant must not be used outside interrupt handler code.
 
-A variant of the above function optimized for use in interrupts. The function is inline and uses a special lightweight inline version of the scheduler. This variant must not be used outside of interrupt handler code.
-
----- 
-
+----
 #### <u>clear</u>
-
 ###### Prototype
-
 ```cpp
 INLINE void OS::TEventFlag::clear();
 ```
 
 ###### Description
+Clear the flag. Sometimes synchronization requires waiting for the *next* event rather than processing one that has already occurred. In such cases, the event flag must be cleared before starting the wait. The `clear()` function serves this purpose.
 
-Clears the flag. Sometimes, for synchronization, it is necessary to wait for the *next* event, not to handle an already occurred one. In this case, the event flag must be cleared before proceeding to wait. The `clear()` function is used for this purpose.
-
----- 
-
-#### <u>check if signaled</u>
-
+----
+#### <u>is_signaled</u>
 ###### Prototype
-
 ```cpp
 INLINE bool OS::TEventFlag::is_signaled();
 ```
 
 ###### Description
+Check the flag state. It is not always necessary to wait for an event by yielding control. Sometimes the program logic only requires checking whether the event has occurred.
 
-Checks the state of the flag. It is not always necessary to wait for an event by yielding control. Sometimes, based on the program's logic, it is only necessary to check whether the event has occurred.
-
----- 
-
+----
 ### Usage Example
 
 An example of using an event flag is shown in "Listing 5. Using TEventFlag".
 
-In this example, process `Proc1` waits for an event with a timeout of 10 system timer ticks (9). The second process, `Proc2`, "signals" the flag when a condition is met (27). If the first process has higher priority, it will gain control immediately.
+In this example, process `Proc1` waits for an event with a timeout of 10 system timer ticks (line 9). The second process—`Proc2`—signals the flag when a condition is met (line 27). If the first process has higher priority, it will immediately receive control.
 
 ```cpp
-01    OS::TEventFlag eflag;
-02    ...
-03    //----------------------------------------------------------------
-04    template<> void Proc1::exec()
-05    {
-06        for(;;)
-07        {
-08            ...
-09            if( eflag.wait(10) ) // wait event for 10 ticks
-10            {
-11                ...   // do something
-12            }
-13            else
-14            {
-15                ...   // do something else
-16            }
-17            ...
-18        }
-19    }
-20    ...
-21    //----------------------------------------------------------------
-22    template<> void Proc2::exec()
-23    {
-24        for(;;)
-25        {
-26            ...
-27            if( ... ) eflag.signal(); 
-28            ...
-29        }
-30    }
-31    //----------------------------------------------------------------
+01 OS::TEventFlag eflag;
+02 ...
+03 //----------------------------------------------------------------
+04 template<> void Proc1::exec()
+05 {
+06     for(;;)
+07     {
+08         ...
+09         if( eflag.wait(10) ) // wait event for 10 ticks
+10         {
+11             ... // do something
+12         }
+13         else
+14         {
+15             ... // do something else
+16         }
+17         ...
+18     }
+19 }
+20 ...
+21 //----------------------------------------------------------------
+22 template<> void Proc2::exec()
+23 {
+24     for(;;)
+25     {
+26         ...
+27         if( ... ) eflag.signal();
+28         ...
+29     }
+30 }
+31 //----------------------------------------------------------------
 ```
-/// Caption
-Listing 5. Using TEventFlag
+
+/// Caption  
+Listing 5. Using TEventFlag  
 ///
 
 !!! info "**NOTE**"
+    When an event occurs and a process signals the flag, **all** processes waiting for that flag are marked ready to run. In other words, every process that was waiting will be awakened. They will, of course, receive control in order of their priorities, but no process that had already entered the wait state will miss the event, regardless of its priority.
 
-    When an event occurs and a process "signals" the flag, **all** processes that were waiting for this flag will be transitioned to the ready state. In other words, everyone who was waiting has now received the event. They will, of course, gain control in the order of their priorities, but the event will not be missed by any process that managed to start waiting, regardless of its priority.
-
-    Thus, an event flag *exhibits broadcast behavior*, which is very useful for organizing notifications and synchronizing multiple processes based on a single event. Of course, nothing prevents using an event flag in a "point-to-point" scheme where there is only one process waiting for the event.
+    Thus, the event flag **possesses a broadcast property**, which is very useful for notifying and synchronizing multiple processes on a single event. Naturally, nothing prevents using an event flag in a point-to-point manner, where only one process is waiting for the event.
 
 ----
 
 ## OS::TMutex
 
-The Mutex semaphore (from Mutual Exclusion), as the name suggests, is designed to organize mutual exclusion of access. That is, at any given moment, no more than one process can hold this semaphore. If any process attempts to lock a Mutex that is already held by another process, the attempting process will wait until the semaphore is released.
+A **Mutex** semaphore (from *Mutual Exclusion*) is designed, as its name suggests, to enforce mutual exclusion in access. At any given moment, only one process may hold (own) the mutex. If another process attempts to acquire a mutex that is already held by a different process, the attempting process will wait until the mutex is released.
 
-The primary use of Mutex semaphores is to organize mutual exclusion when accessing a particular resource. For example, a static array with global visibility[^12] is used by two processes to exchange data. To avoid errors during the exchange, it is necessary to prevent one process from having access to the array during the period when another process is working with it.
+The primary use of mutex semaphores is to provide mutual exclusion when accessing shared resources. For example, consider a static array with global scope[^12] through which two processes exchange data. To prevent errors during the exchange, access to the array must be exclusive—one process must not be allowed to access it while the other is working with it.
 
-Using a critical section for this is not the best approach, as interrupts would be disabled for the entire time the process accesses the array. This time might be significant, and during it, the system would be unable to respond to events. In this situation, a mutual exclusion semaphore is perfectly suitable: a process planning to work with a shared resource must first lock the Mutex semaphore. After that, it can safely work with the resource.
+Using a critical section for this purpose is not ideal, because interrupts would be disabled for the entire duration of the array access, which can be significant. During this time, the system would be unable to respond to events. A mutual-exclusion semaphore is far better suited here: the process intending to work with the shared resource must first acquire the mutex. Once acquired, it can safely manipulate the resource.
 
-Upon completion of the work, the semaphore must be released so that other processes can access it. It goes without saying that all processes working with the shared resource should behave this way, i.e., access it through the semaphore[^13].
+Upon completion, the process must release the mutex so that other processes can gain access. It goes without saying that **all** processes accessing the shared resource must follow this discipline—accessing it only through the mutex[^13].
 
-[^12]: So that various parts of the program have access to it.
-[^13]: General rule: all processes working with a shared resource must behave this way, i.e., perform access through the semaphore.
+[^12]: To make it accessible to different parts of the program.
+[^13]: General rule: every process working with a shared resource must adhere to this protocol.
 
-These same considerations fully apply to calling a non-reentrant[^14] function.
+The same considerations fully apply to calling non-reentrant[^14] functions.
 
-[^14]: A function that uses objects with non-local storage class during its operation. Therefore, to prevent disruption of the program's integrity, such a function must not be called if an instance of the same function is already running.
+[^14]: A function that uses objects with non-local storage duration during its execution; calling it while another instance is already running would corrupt program integrity.
 
 !!! warning "**WARNING**"
+    When using mutual-exclusion semaphores, a **deadlock** situation (sometimes translated as "deadly embrace") can arise. Imagine one process holds Mutex A and attempts to acquire Mutex B, while another process holds Mutex B and attempts to acquire Mutex A. Both processes end up waiting indefinitely for the other to release its mutex.
 
-    When using mutual exclusion semaphores, a situation may arise where one process, having locked a semaphore and working with the corresponding resource, attempts to access another resource, which is also accessed by locking another semaphore. This second semaphore is already locked by another process, which, in turn, is trying to access the resource already being used by the first process. As a result, both processes are waiting for each other to release the locked resource, and until that happens, neither can continue its work.
+    This is known as a *deadlock* (in English literature, simply "deadlock"). To avoid it, the programmer must carefully manage access to shared resources. A good rule that prevents such situations is to **never hold more than one mutex at a time**. In any case, success depends on the developer's attention and discipline.
 
-    This situation is called a "deadlock"[^15]. In English-language literature, it is denoted by the word "Deadlock." To avoid it, the programmer must carefully monitor access to shared resources. A good rule to prevent the situation described above is to lock no more than one mutual exclusion semaphore at a time. In any case, success here is based on the attentiveness and discipline of the program developer.
+[^15]: Occasionally translated as "deadly embrace".
 
-[^15]: Sometimes translated as "deadly embrace."
-
-For implementing binary semaphores of this type, **scmRTOS** defines the `OS::TMutex` class. See "Listing 6. OS::TMutex".
+Binary semaphores of this type are implemented in **scmRTOS** by the class `OS::TMutex`—see "Listing 6. OS::TMutex".
 
 ```cpp
-01    class TMutex : public TService
-02    {
-03    public:
-04        INLINE TMutex() : ProcessMap(0), ValueTag(0) { }
-05               void lock();
-06               void unlock();
-07               void unlock_isr();
-08   
-09        INLINE bool try_lock()        { TCritSect cs; if(ValueTag) return false;
-10                                                      else lock(); return true; }
-11        INLINE bool is_locked() const { TCritSect cs; return ValueTag != 0; }
-12   
-13    private:
-14        volatile TProcessMap ProcessMap;
-15        volatile TProcessMap ValueTag;
-16   
-17    };
-```    
-/// Caption
-Listing 6. OS::TMutex
+01 class TMutex : public TService
+02 {
+03 public:
+04     INLINE TMutex() : ProcessMap(0), ValueTag(0) { }
+05     void lock();
+06     void unlock();
+07     void unlock_isr();
+08
+09     INLINE bool try_lock() { TCritSect cs; if(ValueTag) return false;
+10     else lock(); return true; }
+11     INLINE bool is_locked() const { TCritSect cs; return ValueTag != 0; }
+12
+13 private:
+14     volatile TProcessMap ProcessMap;
+15     volatile TProcessMap ValueTag;
+16
+17 };
+```
+
+/// Caption  
+Listing 6. OS::TMutex  
 ///
 
-Obviously, before use, the semaphore must be created. Due to the specifics of its application, the semaphore should have the same storage class and scope as the resource it serves, i.e., it should be a static object with global visibility[^16].
+Obviously, a mutex must be created before use. Due to its purpose, the mutex should have the same storage class and visibility as the resource it protects—typically a static object with global scope[^16].
 
-[^16]: Although nothing prevents placing a Mutex outside the process code's scope and using a pointer or reference, either directly or through wrapper classes that automate the resource unlocking process via the automatic call of the wrapper class's destructor.
+[^16]: Although nothing prevents placing the mutex outside a process's visibility and accessing it via pointer/reference, either directly or through wrapper classes that automate unlocking via their destructor.
 
 ### Interface
-
----- 
+----
 
 #### <u>lock</u>
-
 ###### Prototype
-
 ```cpp
 void TMutex::lock();
 ```
 
 ###### Description
+Performs a **blocking** acquire: if the mutex is currently free, its internal state is set to locked and control returns to the caller. If the mutex is already held, the calling process is placed in a waiting state until the mutex is released, and control is yielded to the kernel.
 
-Performs a blocking lock: if the semaphore was not previously locked by another process, its internal state is set to "locked," and the execution flow returns to the calling function. If the semaphore was already locked, the process will transition to a waiting state until the semaphore is released, and control is yielded to the kernel.
-
----- 
-
+----
 #### <u>unlock</u>
-
 ###### Prototype
-
 ```cpp
 void TMutex::unlock();
 ```
 
 ###### Description
+Sets the internal state to unlocked and checks whether any other process is waiting for this mutex. If so, control is yielded to the kernel for rescheduling—the highest-priority waiting process will receive control immediately if it has higher priority. If multiple processes are waiting, the highest-priority one runs next. **Only the process that locked the mutex can unlock it**—calling `unlock()` from a different process has no effect and leaves the mutex locked.
 
-The function sets the internal state to "unlocked" and checks if any other process is waiting for this semaphore. If there is, control is yielded to the kernel, which will reschedule processes so that if the waiting process had higher priority, it will immediately gain control. If several processes were waiting for the semaphore, the highest-priority one among them will gain control. Only the process that locked the semaphore can unlock it—i.e., if this function is executed in a process that did not lock the mutex object, it will have no effect, and the object will remain in the same state.
-
----- 
-
+----
 #### <u>unlock from ISR</u>
-
 ###### Prototype
-
 ```cpp
 INLINE void TMutex::unlock_isr();
 ```
 
 ###### Description
+Sometimes a mutex is locked in a process, but the actual work with the protected resource occurs in an interrupt handler (initiated by the process after locking). In such cases, it is convenient to unlock directly from the ISR upon completion. The `unlock_isr()` function is provided for this purpose.
 
-Sometimes a situation arises where a mutex is locked within a process, but work with the corresponding protected resource is performed in an interrupt handler (and this work is initiated in the process simultaneously with locking the mutex).
-
-In this case, it is convenient to perform the unlock directly in the interrupt handler upon completion of work with the resource. For this purpose, `TMutex` includes the `unlock_isr()` function for unlocking the semaphore directly within an interrupt.
-
----- 
-
+----
 #### <u>try to lock</u>
-
 ###### Prototype
-
 ```cpp
 INLINE bool TMutex::try_lock();
 ```
 
 ###### Description
+**Non-blocking** acquire. Unlike `lock()`, acquisition occurs only if the mutex is currently free. This is useful when a process has other work to do and does not want to block indefinitely. For example, a high-priority process might prefer to perform alternative tasks while a lower-priority process holds the mutex, rather than yielding control.
 
-Non-blocking lock. The difference from `lock()` is that the lock will only occur if the semaphore is free. For example, a process needs to work with a resource but also has a lot of other work. Attempting to lock with `lock()` might cause it to wait until the semaphore is freed, whereas that time could be spent on other work if available, and work with the shared resource could be performed only when access to it is not blocked.
+Use this function cautiously—excessive use in high-priority processes can starve lower-priority ones, preventing them from ever releasing the mutex.
 
-This approach can be relevant for a high-priority process: if the semaphore is locked by a low-priority process, it is reasonable for the high-priority process not to yield control to the low-priority one if it has other work. Only when there is nothing left to do does it make sense to attempt to lock the semaphore in the usual way—by yielding control (since the low-priority process must also eventually gain control to finish its tasks and release the semaphore).
-
-Considering the above, this function should be used with caution, as it could lead to a situation where a low-priority process never gains control because the high-priority one does not yield it.
-
----- 
-
+----
 #### <u>try to lock with timeout</u>
-
 ###### Prototype
-
 ```cpp
 OS::TMutex::try_lock(timeout_t timeout);
 ```
 
 ###### Description
+Blocking acquire limited to the specified timeout interval. Returns `true` if the mutex was acquired, `false` otherwise.
 
-A blocking version of the previous function with a specified time interval—attempts to lock the semaphore within the specified timeout. If the lock is successful, returns `true`; otherwise, returns `false`.
-
----- 
-
+----
 #### <u>check if locked</u>
-
 ###### Prototype
-
 ```cpp
 INLINE bool TMutex::is_locked()
 ```
 
 ###### Description
+Returns `true` if the mutex is currently locked, `false` otherwise. Sometimes a mutex is used as a simple state flag—one process sets it (by locking), while others check the state and react accordingly.
 
-The function checks the state and returns `true` if the semaphore is locked, and `false` otherwise. It is sometimes convenient to use a semaphore as a status flag, where one process sets this flag (by locking the semaphore), and other processes check it and perform actions according to the state of that process.
-
----- 
-
+----
 ### Usage Example
 
-See "Listing 7. Example of Using OS::TMutex" for a usage example.
+An example is shown in "Listing 7. Example of Using OS::TMutex".
 
 ```cpp
-01    OS::TMutex Mutex;
-02    byte buf[16];
-03    ...
-04    template<> void TSlon::exec()
-05    {
-06        for(;;)
-07        {
-08            ...                           // some code
-09                                          //
-10            Mutex.lock();                 // resource access lock
-11            for(byte i = 0; i < 16; i++)  //   
-12            {                             //
-13                ...                       // do something with buf
-14            }                             //
-15            Mutex.unlock();               // resource access unlock
-16                                          //
-17            ...                           // some code
-18        }
-19    }
+01 OS::TMutex Mutex;
+02 byte buf[16];
+03 ...
+04 template<> void TSlon::exec()
+05 {
+06     for(;;)
+07     {
+08         ... // some code
+09         //
+10         Mutex.lock(); // resource access lock
+11         for(byte i = 0; i < 16; i++) //
+12         { //
+13             ... // do something with buf
+14         } //
+15         Mutex.unlock(); // resource access unlock
+16         //
+17         ... // some code
+18     }
+19 }
 ```
-/// Caption
-Listing 7. Example of Using OS::TMutex
+
+/// Caption  
+Listing 7. Example of Using OS::TMutex  
 ///
 
-For convenience when using a mutual exclusion semaphore, the already mentioned wrapper class technique can be applied. In this case, it is implemented using the `TMutexLocker` class, included in the OS distribution. See "Listing 8. Wrapper Class OS::TMutexLocker".
+For convenient mutex usage, the well-known wrapper-class technique can be applied via `TMutexLocker` (included in the distribution)—see "Listing 8. Wrapper Class OS::TMutexLocker".
 
 ```cpp
-01     template <typename Mutex>
-02     class TScopedLock
-03     {
-04     public:
-05         TScopedLock(Mutex& m): mx(m) { mx.lock(); }
-06         ~TScopedLock() { mx.unlock(); }
-07     private:
-08         Mutex & mx;
-09     };
-10 
-11     typedef TScopedLock<OS::TMutex> TMutexLocker;
+01 template <typename Mutex>
+02 class TScopedLock
+03 {
+04 public:
+05     TScopedLock(Mutex& m): mx(m) { mx.lock(); }
+06     ~TScopedLock() { mx.unlock(); }
+07 private:
+08     Mutex & mx;
+09 };
+10
+11 typedef TScopedLock<OS::TMutex> TMutexLocker;
 ```
-/// Caption
-Listing 8. Wrapper Class OS::TMutexLocker
+
+/// Caption  
+Listing 8. Wrapper Class OS::TMutexLocker  
 ///
 
-The methodology for using objects of this class is no different from using other wrapper classes—`TCritSect`, `TISRW`.
+The usage methodology is identical to other wrappers such as `TCritSect` and `TISRW`.
 
-!!! tip "**ABOUT PRIORITY INVERSION**"
+<a name="mutex-priority-inversion"></a>
+!!! tip "**ON PRIORITY INVERSION**"
+    A few words about **priority inversion**, a phenomenon related to mutual-exclusion semaphores.
 
-    A few words should be said about a mechanism related to mutual exclusion semaphores: priority inversion.
+    Consider a system with processes of priorities N[^17] and N+n (n>1) sharing a resource protected by a mutex. The higher-priority process (N) attempts to acquire the mutex while the lower-priority process (N+n) already holds it and is working with the resource. The high-priority process must wait—an unavoidable delay, as preempting the low-priority process would corrupt resource integrity. Developers typically minimize the critical section duration to limit this delay.
 
-    The idea of priority inversion arises from the following situation. For example, a system has several processes, and processes with priorities N[^17] and N+n, where n>1, use the same resource, sharing work via a mutual exclusion semaphore. At some point, the process with priority N+n locks the semaphore and is working with the shared resource.
+    The problem arises when a medium-priority process (e.g., N+1) becomes ready: it preempts the low-priority holder (N+n), further delaying the high-priority waiter (N). Since the medium-priority process is unrelated to the shared resource, its execution time may not be optimized, potentially blocking the high-priority process indefinitely—an undesirable situation.
 
-    During this, an event occurs that activates the process with priority N, which attempts to access the shared resource and, in trying to lock the semaphore, transitions to a waiting state. It will remain in this state until the process with priority N+n unlocks the semaphore. The delay of the higher-priority process in this situation is forced, as it is impossible to take control away from the process with priority N+n without violating the logic of its work and the integrity of access to the shared resource. Knowing this, the developer typically tries to minimize the time spent working with the resource so that the low-priority process does not block the work of the high-priority one.
+    To prevent this, **priority inheritance** is used: when a high-priority process waits on a mutex held by a low-priority process, the holder temporarily inherits the waiter’s priority until it releases the mutex. This eliminates unbounded blocking.
 
-    However, there is an unpleasant aspect to this situation: if at the moment described above a process with priority, for example, N+1, becomes active, it will preempt the process with priority N+n (since n>1) and thereby introduce an additional delay for the waiting higher-priority process with priority N. The situation is aggravated by the fact that the program developer usually does not connect the work of the process with priority N+1 with the manipulations of processes with priorities N and N+n on the shared resource. Therefore, they might not consider optimizing the work of the process with priority N+1 in relation to this, which could completely block the work of the process with priority N for an unpredictable amount of time. This is a highly undesirable situation.
+[^17]: Priorities are inversely related to their numeric value—priority 0 is highest; higher numbers mean lower priority.
 
-    To avoid this, a technique called "priority inversion" is used. Its essence is that if a high-priority process attempts to lock a mutual exclusion semaphore that is already locked by a low-priority process, a temporary exchange of priorities occurs until the semaphore is unlocked. In effect, the low-priority process runs with the priority of the process that attempted to lock the semaphore. In this case, the situation described above, where a low-priority process blocks the work of a high-priority one, becomes impossible.
+Despite its elegance, priority inheritance has drawbacks: implementation overhead can be comparable to or exceed that of the mutex itself, and the required modifications across the OS (all priority-related components) may unacceptably degrade performance.
 
-[^17]: It is assumed that process execution priority is inversely related to priority numbers—i.e., the process with priority 0 is the highest priority, and as priority numbers increase, process priority decreases.
-
-Despite the coherence and elegance of the priority inversion method, it is not without drawbacks. The main one is that its technical implementation incurs overhead comparable to or exceeding the cost of implementing the mutual exclusion semaphore functionality itself. It might turn out that switching process priorities and everything associated with it—requiring consideration of all OS elements related to the priorities of processes involved in the inversion—slows down the system to an unacceptable level.
-
-In connection with this, the priority inversion mechanism is not used in the current version of **scmRTOS**. Instead, to solve the aforementioned problem of a high-priority process being blocked by a low-priority one, a task delegation mechanism is proposed, discussed in detail in "Appendix A Usage Examples, A.1 Task Queue." This represents a unified method for redistributing the execution of contextually related code among processes with different priorities.
+For these reasons, the current version of **scmRTOS** does not implement priority inheritance. Instead, the problem is addressed via **task delegation**, described in detail in Appendix ([Example: Job Queue](example-job-queue.md)), which provides a unified method for redistributing context-related code execution across processes of different priorities.
 
 ----
 
 ## OS::message
 
-`OS::message` is a C++ template for creating objects that implement inter-process communication by transmitting structured data. `OS::message` is similar to `OS::TEventFlag` and differs mainly in that, besides the flag itself, it also contains an object of an arbitrary type constituting the actual message body.
+`OS::message` is a C++ template for creating objects that enable interprocess communication by exchanging structured data. `OS::message` is similar to `OS::TEventFlag`, with the main difference being that, in addition to the flag itself, it also contains an object of an arbitrary type that forms the actual message payload.
 
-The template definition is shown in "Listing 9 OS::message".
+The template definition is shown in "Listing 9. OS::message".
 
-As can be seen from the listing, the message template is built upon the `TBaseMessage` class. This is done for efficiency reasons, to avoid duplicating common code in template instances—the code common to all messages is moved to the level of the base class[^18].
+As can be seen from the listing, the message template is built upon the `TBaseMessage` class. This is done for efficiency reasons—to avoid duplicating common code across template instantiations. The code shared by all messages is factored out into the base class[^18].
 
-[^18]: The same technique is used when building the process template: the pair `class TBaseProcess`&nbsp;– `template process<>`.
+[^18]: The same technique is used in the process implementation: the pair `class TBaseProcess` – `template process<>`.
 
 ```cpp
-01    class TBaseMessage : public TService
-02    {
-03    public:
-04        INLINE TBaseMessage() : ProcessMap(0), NonEmpty(false) { }
-05   
-06        bool wait  (timeout_t timeout = 0);
-07        INLINE void send();
-08        INLINE void send_isr();
-09        INLINE bool is_non_empty() const { TCritSect cs; return NonEmpty;  }
-10        INLINE void reset       ()       { TCritSect cs; NonEmpty = false; }
-11   
-12    private:
-13        volatile TProcessMap ProcessMap;
-14        volatile bool NonEmpty;
-15    };
-16   
-17    template<typename T>
-18    class message : public TBaseMessage
-19    {
-20    public:
-21        INLINE message() : TBaseMessage()   { }
-22        INLINE const T& operator= (const T& msg)
-23        {
-24            TCritSect cs;
-25            *(const_cast<T*>(&Msg)) = msg; return const_cast<const T&>(Msg);
-26        }
-27        INLINE operator T() const
-28        {
-29            TCritSect cs;
-30            return const_cast<const T&>(Msg);
-31        }
-32        INLINE void out(T& msg) { TCritSect cs; msg = const_cast<T&>(Msg); }
-33   
-34    private:
-35        volatile T Msg;
-36    };
+01 class TBaseMessage : public TService
+02 {
+03 public:
+04     INLINE TBaseMessage() : ProcessMap(0), NonEmpty(false) { }
+05
+06     bool wait (timeout_t timeout = 0);
+07     INLINE void send();
+08     INLINE void send_isr();
+09     INLINE bool is_non_empty() const { TCritSect cs; return NonEmpty; }
+10     INLINE void reset () { TCritSect cs; NonEmpty = false; }
+11
+12 private:
+13     volatile TProcessMap ProcessMap;
+14     volatile bool NonEmpty;
+15 };
+16
+17 template<typename T>
+18 class message : public TBaseMessage
+19 {
+20 public:
+21     INLINE message() : TBaseMessage() { }
+22     INLINE const T& operator= (const T& msg)
+23     {
+24         TCritSect cs;
+25         *(const_cast<T*>(&Msg)) = msg; return const_cast<const T&>(Msg);
+26     }
+27     INLINE operator T() const
+28     {
+29         TCritSect cs;
+30         return const_cast<const T&>(Msg);
+31     }
+32     INLINE void out(T& msg) { TCritSect cs; msg = const_cast<T&>(Msg); }
+33
+34 private:
+35     volatile T Msg;
+36 };
 ```
-/// Caption
-Listing 9. OS::message
+
+/// Caption  
+Listing 9. OS::message  
 ///
 
 ### Interface
-
 ----
 
 #### <u>send</u>
-
 ###### Prototype
-
 ```cpp
 INLINE void OS::TBaseMessage::send();
 ```
 
 ###### Description
+Send the message[^19]: the operation marks all processes waiting for the message as ready to run and invokes the scheduler.
 
-Sends a message[^19]. The operation involves transitioning processes waiting for the message to the ready state and calling the scheduler.
-
----- 
-
+----
 #### <u>send from ISR</u>
-
 ###### Prototype
-
 ```cpp
 INLINE void OS::TBaseMessage::send_isr();
 ```
 
 ###### Description
+A version of the above function optimized for use in interrupt handlers. The function is inline and uses a special lightweight inline scheduler version. *This variant must not be used outside interrupt handler code*.
 
-A variant of the above function optimized for use in interrupts. The function is inline and uses a special lightweight inline version of the scheduler. ***This variant must not be used outside of interrupt handler code***.
-
----- 
-
+----
 #### <u>wait</u>
-
 ###### Prototype
-
 ```cpp
 bool OS::TBaseMessage::wait(timeout_t timeout);
 ```
 
 ###### Description
+Wait for a message[^20]: the function checks whether the message is non-empty. If it is, the function returns `true`. If it is empty, the current process is removed from the ready-to-run state and placed into a waiting state for this message.
 
-Waits for a message[^20]. The function checks if the message is non-empty. If it is non-empty, it returns `true`. If it is empty, it transitions the current process from the ready state to a state of waiting for this message.
+If called without an argument (or with an argument of 0), waiting continues indefinitely until another process sends a message or the current process is forcibly awakened using `TBaseProcess::force_wake_up()`[^21].
 
-If no argument is specified during the call or if the argument is 0, waiting will continue until some process sends a message or the current process is "awakened" using the `TBaseProcess::force_wake_up()` function[^21].
+If a positive integer timeout (in system timer ticks) is provided, waiting occurs with a timeout—the process will be awakened in any case. If awakened before the timeout expires (i.e., a message arrives), the function returns `true`. If the timeout expires first, it returns `false`.
 
-If an integer is specified as an argument, representing the timeout value expressed in system timer ticks, then waiting for the message will occur with a timeout, i.e., the process will be "awakened" in any case. If this happens before the timeout expires, meaning a message arrives before the timeout, the function returns `true`. Otherwise, i.e., if the timeout expires before the message is sent, the function returns `false`.
-
----- 
-
+----
 #### <u>check if non-empty</u>
-
 ###### Prototype
-
 ```cpp
-INLINE bool OS::TBaseMessage::is_non_empty(); 
+INLINE bool OS::TBaseMessage::is_non_empty();
 ```
 
 ###### Description
+Returns `true` if a message has been sent (non-empty), `false` otherwise.
 
-The function returns `true` if a message has been sent, and `false` otherwise.
-
----- 
-
+----
 #### <u>reset</u>
-
 ###### Prototype
-
 ```cpp
 INLINE OS::TBaseMessage::reset();
 ```
 
 ###### Description
+Resets the message to the empty state. The message payload remains unchanged.
 
-The function resets the message, i.e., transitions it to the empty state. The message body remains unchanged.
-
----- 
-
+----
 #### <u>write message contents</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T>
 INLINE const T& OS::message<T>::operator= (const T& msg);
 ```
 
 ###### Description
+Writes the message payload into the message object. The standard way to use `OS::message` is to write the payload and then send the message using `TBaseMessage::send()`—see "Listing 10. Using OS::message".
 
-Writes the actual message contents into the message object. The standard way to use `OS::message` is to write the message body and send the message using the `TBaseMessage::send()` function—see "Listing 10. Using OS::message".
-
----- 
-
+----
 #### <u>access message body by reference</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T>
 INLINE OS::message<T>::operator T() const;
 ```
 
 ###### Description
+Returns a constant reference to the message payload. Use this cautiously—while accessing the payload via reference, it may be modified by another process (or interrupt handler). For safe reading, prefer the `message::out()` function.
 
-Returns a constant reference to the message body. This facility should be used with caution, bearing in mind that while accessing the message body via a reference, it might be modified in another process (or interrupt handler). Therefore, it is recommended to use the `message::out()` function for reading the message body.
-
----- 
-
+----
 #### <u>read message contents</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T>
 INLINE OS::message<T>::out(T &msg);
 ```
 
 ###### Description
+Designed for reading the message payload. To avoid unnecessary copying, a reference to an external payload object is passed; the function copies the message contents into it.
 
-The function is intended for reading the message body. For efficiency, to avoid unnecessary copying of the message body, a reference to an external message body object is passed to the function. Inside the function, the message contents are copied into this external object.
-
----- 
-
-[^19]: Analogous to the `OS::TEventFlag::signal()` function.
-[^20]: Analogous to the `OS::TEventFlag::wait()` function.
-[^21]: In the latter case, extreme caution is required.
+----
+[^19]: Analogous to `OS::TEventFlag::signal()`.
+[^20]: Analogous to `OS::TEventFlag::wait()`.
+[^21]: The latter should be used with extreme caution.
 
 ### Usage Example
 
 ```cpp
-01    struct TMamont { ... }           //  data type for sending by message
-02    
-03    OS::message<Mamont> mamont_msg;  // OS::message object
-04    
-05    template<> void Proc1::exec()
-06    {
-07        for(;;)
-08        {
-09            Mamont mamont;
-10            mamont_msg.wait();      // wait for message
-11            mamont_msg.out(mamont); // read message contents to the external object 
-12            ...                     // using the Mamont contents
-13        }     
-14    }
-15    
-16    template<> void Proc2::exec()
-17    {
-18        for(;;)
-19        {
-20            ...
-21            Mamont m;           // create message content
-22    
-23            m...  =             // message body filling
-24            mamont_msg = m;     // put the content to the OS::message object
-25            mamont_msg.send();  // send the message
-26            ...
-27        }
-28    }
+01 struct TMamont { ... } // data type for sending by message
+02
+03 OS::message<Mamont> mamont_msg; // OS::message object
+04
+05 template<> void Proc1::exec()
+06 {
+07     for(;;)
+08     {
+09         Mamont mamont;
+10         mamont_msg.wait(); // wait for message
+11         mamont_msg.out(mamont); // read message contents to the external object
+12         ... // using the Mamont contents
+13     }
+14 }
+15
+16 template<> void Proc2::exec()
+17 {
+18     for(;;)
+19     {
+20         ...
+21         Mamont m; // create message content
+22
+23         m... = // message body filling
+24         mamont_msg = m; // put the content to the OS::message object
+25         mamont_msg.send(); // send the message
+26         ...
+27     }
+28 }
 ```
-/// Caption
-Listing 10. Using OS::message
+
+/// Caption  
+Listing 10. Using OS::message  
 ///
 
 ----
 
-
 ## OS::channel
 
-`OS::channel` is a C++ template for creating objects that implement ring buffers[^22] for the safe transmission of data of arbitrary types within a preemptive OS. Like any other interprocess communication service, `OS::channel` solves synchronization problems. The specific buffer type is specified during the template instantiation[^23] in the user code. The `OS::channel` template is based on the ring buffer template defined in the library included in the **scmRTOS** distribution:
+`OS::channel` is a C++ template for creating objects that implement **ring buffers**[^22] for safe, preemption-aware data transfer of arbitrary types in a preemptive RTOS. Like any other interprocess communication service, `OS::channel` also handles synchronization.
+
+The specific buffer type is defined at template instantiation[^23] in user code. The `OS::channel` template is built upon a generic ring buffer template provided in the **scmRTOS** distribution library:
 
 ```cpp
-usr::ring_buffer<class T, uint16_t size, class S = uint8_t>`
+usr::ring_buffer<class T, uint16_t size, class S = uint8_t>
 ```
 
-[^22]: Functionally, it's a FIFO, i.e., a queue object for data transmission following the First In, First Out scheme.
-[^23]: Creation of a class instance.
+[^22]: Functionally, this is a FIFO (First In – First Out) queue for data transfer.
+[^23]: Instantiation of the template class.
 
-Building channels using C++ templates provides an efficient means for constructing message queues of arbitrary types. Unlike the dangerous, non-transparent, and inflexible method of organizing message queues based on `void *` pointers, the `OS::channel` queue offers:
+Building channels from C++ templates provides an efficient way to create message queues of arbitrary types. Compared to the unsafe, opaque, and inflexible approach of using `void*` pointers for message queues, `OS::channel` offers:
 
-*   **Safety through static type checking**, both when creating the queue/channel and when writing data to it or reading from it.
-*   **Ease of use**—no need for manual type casting, which requires keeping extra information in mind about the real data types transmitted through the channel for their correct use.
-*   **Significantly greater flexibility**—queue objects can be of any type, not just pointers.
+* **Type safety** through static type checking—both when creating the channel and when writing/reading data;
+* **Ease of use**—no manual type casts are required, eliminating the need to keep track of actual data types for correct usage;
+* **Greater flexibility**—queue elements can be any type, not just pointers.
 
-Regarding the last point, a few words should be said: one drawback of using `void *` pointers as a basis for message passing is that the user must allocate memory for the messages themselves somewhere. This is extra work, and the target object becomes distributed—the queue is in one place, while the actual content of the queue elements is elsewhere.
+Regarding the last point: the drawback of `void*`-based message passing is that the user must allocate memory for the messages themselves. This adds extra work and results in distributed objects—the queue in one place, the message payloads elsewhere.
 
-The main advantages of the pointer-based message mechanism are high efficiency for large message bodies and the ability to transmit messages of varying formats. However, if, for example, messages are small—a few bytes—and all have the same format, there is no need for pointers. It's much simpler to create a queue of the required number of such messages, and that's it. In this case, as mentioned, there's no need to allocate memory for the message bodies—since messages are placed entirely into the channel queue, memory for them will be automatically allocated by the compiler directly when creating the channel.
+The main advantages of pointer-based messages are high efficiency with large payloads and the ability to transfer heterogeneous messages. However, when messages are small (a few bytes) and uniformly formatted, pointers are unnecessary. It is far simpler to create a queue holding the required number of such messages directly. As noted, no separate memory allocation is needed for payloads—the compiler automatically allocates storage for the entire message within the channel upon creation.
 
 The channel template definition is shown in "Listing 11. Definition of the OS::channel Template".
 
 ```cpp
-01    template<typename T, uint16_t Size, typename S = uint8_t>
-02    class channel : public TService
-03    {
-04    public:
-05        INLINE channel() : ProducersProcessMap(0)
-06                         , ConsumersProcessMap(0)
-07                         , pool()
-08        {
-09        }
+01 template<typename T, uint16_t Size, typename S = uint8_t>
+02 class channel : public TService
+03 {
+04 public:
+05     INLINE channel() : ProducersProcessMap(0)
+06                      , ConsumersProcessMap(0)
+07                      , pool()
+08     {
+09     }
 10
-11        //----------------------------------------------------------------
-12        //
-13        //    Data transfer functions
-14        //
-15        void write(const T* data, const S cnt);
-16        bool read (T* const data, const S cnt, timeout_t timeout = 0);
+11     //----------------------------------------------------------------
+12     //
+13     // Data transfer functions
+14     //
+15     void write(const T* data, const S cnt);
+16     bool read (T* const data, const S cnt, timeout_t timeout = 0);
 17
-18        void push      (const T& item);
-19        void push_front(const T& item);
+18     void push (const T& item);
+19     void push_front(const T& item);
 20
-21        bool pop     (T& item, timeout_t timeout = 0);
-22        bool pop_back(T& item, timeout_t timeout = 0);
+21     bool pop (T& item, timeout_t timeout = 0);
+22     bool pop_back(T& item, timeout_t timeout = 0);
 23
-24        //----------------------------------------------------------------
-25        //
-26        //    Service functions
-27        //
-28        INLINE S get_count()     const;
-29        INLINE S get_free_size() const;
-30        void flush();
+24     //----------------------------------------------------------------
+25     //
+26     // Service functions
+27     //
+28     INLINE S get_count() const;
+29     INLINE S get_free_size() const;
+30     void flush();
 31
-32    private:
-33        volatile TProcessMap ProducersProcessMap;
-34        volatile TProcessMap ConsumersProcessMap;
-35        usr::ring_buffer<T, Size, S> pool;
-36    };
+32 private:
+33     volatile TProcessMap ProducersProcessMap;
+34     volatile TProcessMap ConsumersProcessMap;
+35     usr::ring_buffer<T, Size, S> pool;
+36 };
 ```
-/// Caption
-Listing 11. Definition of the OS::channel Template
+
+/// Caption  
+Listing 11. Definition of the OS::channel Template  
 ///
 
-`OS::channel` is used as follows: first, define the type of objects to be transmitted through the channel, then define the channel type or create a channel object. For example, suppose the data transmitted through the channel is a structure:
+`OS::channel` is used as follows: first define the type of objects to be transferred, then either define the channel type or create a channel object. For example, suppose the data to be transferred is a structure:
 
 ```cpp
 struct Data
 {
-    int   a;
+    int a;
     char *p;
 };
 ```
 
-Now, you can create a channel object by instantiating the `OS::channel` template:
+A channel object can now be created by instantiating the `OS::channel` template:
 
 ```cpp
 OS::channel<Data, 8> data_queue;
 ```
 
-This code declares a channel object `data_queue` for transmitting objects of type `Data`, with a channel capacity of 8 objects. The channel is now ready for use.
+This declares a channel object `data_queue` for transferring `Data` objects, with a capacity of 8 items. The channel is now ready for data transfer.
 
-`OS::channel` provides the ability to write data not only to the end of the queue but also to the beginning, and to read data not only from the beginning but also from the end of the queue. When reading, it is also possible to specify a timeout value.
+`OS::channel` supports writing data not only to the tail but also to the head of the queue, and reading not only from the head but also from the tail. Reading operations allow specifying a timeout.
 
-The following interface is provided for operating on a channel object:
+The following interface is provided for channel operations:
 
 ### Interface
-
 ----
 
 #### <u>push</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 void OS::channel<T, Size, S>::push(const T& item);
 ```
 
 ###### Description
-
-Pushes one element to the end of the queue[^24]. If there was space in the channel at the time of writing, the element is written to the queue and the scheduler is called. If there was no space, the process transitions to a waiting state until space becomes available in the channel. When space appears, the element will be written, followed by a call to the scheduler.
+Writes a single element to the tail of the queue[^24]. If space is available, the element is written and the scheduler is invoked. If no space is available, the process waits until space appears, then writes the element and invokes the scheduler.
 
 ----
-
-#### <u>push front</u>
-
+#### <u>push_front</u>
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 void OS::channel<T, Size, S>::push_front(const T& item);
 ```
 
 ###### Description
-
-Pushes an element to the **beginning** of the queue. In all other respects, the logic of operation is exactly the same as for `channel::push()`.
+Writes an element to the head of the queue; otherwise identical to `channel::push()`.
 
 ----
-
 #### <u>pop</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 bool OS::channel<T, Size, S>::pop(T& item, timeout_t timeout);
 ```
 
 ###### Description
+Extracts a single element from the head of the queue if the channel is not empty. If empty, the process waits until data arrives or the timeout expires (if specified)[^25].
 
-Pops one element from the **beginning** of the queue if the channel was not empty. If the channel was empty, the process transitions to a waiting state until data appears in it **or** until the timeout expires, if a timeout was specified[^25].
+When called with a timeout, returns `true` if data arrived before expiration, `false` otherwise. When called without timeout, always returns `true` (except when awakened by `OS::TBaseProcess::wake_up()` or `OS::TBaseProcess::force_wake_up()`).
 
-In case of a call with a timeout: if data arrives before the timeout expires, the function returns `true`; otherwise, it returns `false`. If the call was made without a timeout, the function always returns `true`, except when awakened by `OS::TBaseProcess::wake_up()` or `OS::TBaseProcess::force_wake_up()`.
+In all cases, extracting an element invokes the scheduler.
 
-In all cases, when an element is popped, the scheduler is called.
-
-Note that when calling this function, the data popped from the channel is not returned by copying from the function but is passed via a reference to an object. This is because the return value is used to convey the timeout result.
+Note that extracted data is returned via reference parameter rather than function return value, as the return value is used for timeout status.
 
 ----
-
-#### <u>pop back</u>
-
+#### <u>pop_back</u>
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 bool OS::channel<T, Size, S>::pop_back(T& item, timeout_t timeout);
 ```
 
 ###### Description
-
-Pops one element from the **end** of the queue if the channel was not empty. All functionality is exactly the same as for `channel::pop()`.
+Extracts a single element from the tail of the queue; otherwise identical to `channel::pop()`.
 
 ----
-
 #### <u>write</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 void OS::channel<T, Size, S>::write(const T* data, const S count);
 ```
 
 ###### Description
-
-Writes several elements from memory at the given address to the **end** of the queue. Essentially, this is the same as pushing one element to the end of the queue (`push`), except that not one but the specified number of elements are written. In case of waiting, it continues until enough space becomes available in the channel.
+Writes multiple elements to the tail from a memory buffer. Equivalent to repeated `push()`, but waits (if necessary) until sufficient space is available for the entire block.
 
 ----
-
 #### <u>write inside ISR</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 S OS::channel<T, Size, S>::write_isr(const T* data, const S count);
 ```
 
 ###### Description
+Special version for use inside interrupt handlers. Writes as many elements as free space allows (up to the requested count) and returns the number written. Waiting consumers are marked ready.
 
-A special version for use inside interrupt handlers. The function writes as many elements as the free space in the channel allows (but no more than the specified count) and returns the number of elements written. Processes waiting for data from the channel are transitioned to the ready state.
-
-The call is **non-blocking**. The scheduler is **not** called.
+Non-blocking. Scheduler is not invoked.
 
 ----
-
 #### <u>read</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 bool OS::channel<T, Size, S>::read(T* const data, const S count, timeout_t timeout);
 ```
 
 ###### Description
-
-Pops several elements from the channel. This is the same as `channel::pop()`, except that not one but the specified number of elements are popped. If waiting occurs, it continues until the required number of elements is available in the channel or until the timeout triggers (if used).
+Extracts multiple elements from the channel. Equivalent to repeated `pop()`, but waits (if necessary) until the requested number of elements is available or timeout expires.
 
 ----
-
 #### <u>read inside ISR</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 S OS::channel<T, Size, S>::read_isr(T* const data, const S max_size);
 ```
 
 ###### Description
+Special version for interrupt handlers. Reads as many elements as available (up to the requested maximum) and returns the number read. Waiting producers are marked ready.
 
-A special version for use inside interrupt handlers. The function reads as many elements as are present in the channel (but no more than the specified count) and returns the number of elements written. Processes waiting for free space to appear in the channel are transitioned to the ready state.
-
-The call is **non-blocking**. The scheduler is **not** called.
+Non-blocking. Scheduler is not invoked.
 
 ----
-
 #### <u>get item count</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 S OS::channel<T, Size, S>::get_count();
 ```
 
 ###### Description
-
-Returns the number of elements currently in the channel. The function is **inline**, so its efficiency is maximized.
+Returns the current number of elements in the channel. Inline for maximum efficiency.
 
 ----
-
 #### <u>get free size</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 S OS::channel<T, Size, S>::get_free_size();
 ```
 
 ###### Description
-
-Returns the amount of free space available in the channel.
+Returns the amount of free space in the channel.
 
 ----
-
 #### <u>flush</u>
-
 ###### Prototype
-
 ```cpp
 template<typename T, uint16_t Size, typename S>
 S OS::channel<T, Size, S>::flush();
 ```
 
 ###### Description
-
-Clears the channel. The function clears the buffer by calling `usr::ring_buffer<>::flush()` and calls the scheduler.
+Clears the channel by calling `usr::ring_buffer<>::flush()` and invokes the scheduler.
 
 ----
-
-[^24]: Refers to the channel's queue. Functionally, since a channel is a FIFO, the end of the queue corresponds to the FIFO input, and the beginning of the channel corresponds to the FIFO output.
-[^25]: I.e., the call included a second argument—an integer specifying the timeout value in system timer ticks.
+[^24]: Referring to the channel queue. Since the channel is a FIFO, the tail corresponds to the FIFO input, the head to the FIFO output.
+[^25]: I.e., the call included a second argument specifying the timeout in system timer ticks.
 
 ### Usage Example
 
-A simple usage example is shown in "Listing 12. Example of Using a Queue Based on a Channel".
+A simple example is shown in "Listing 12. Example of Using a Queue Based on a Channel".
 
 ```cpp
-01    //---------------------------------------------------------------------
-02    struct Cmd
-03    {
-04        enum CmdName { cmdSetCoeff1, cmdSetCoeff2, cmdCheck } CmdName;
-05        int Value;
-06    };
+01 //---------------------------------------------------------------------
+02 struct Cmd
+03 {
+04     enum CmdName { cmdSetCoeff1, cmdSetCoeff2, cmdCheck } CmdName;
+05     int Value;
+06 };
 07
-08    OS::channel<Cmd, 10> cmd_q; // Queue for Commands with 10 items depth
-09    //---------------------------------------------------------------------
-10    template<> void Proc1::exec()
-11    {
-12        ...
-13        Cmd cmd = { cmdSetCoeff2, 12 };
-14        cmd_q.push(cmd);
-15        ...
-16    }
-17    //---------------------------------------------------------------------
-18    template<> void Proc2::exec()
-19    {
-20        ...
-21        Cmd cmd;
-22        if( cmd_q.pop(cmd, 10) ) // wait for data, timeout 10 system ticks
-23        {
-24            ... // data incoming, do something
-25        }
-26        else
-27        {
-28            ... // timeout expires, do something else
-29        }
-30        ...
-31    }
-32    //---------------------------------------------------------------------
+08 OS::channel<Cmd, 10> cmd_q; // Queue for Commands with 10 items depth
+09 //---------------------------------------------------------------------
+10 template<> void Proc1::exec()
+11 {
+12     ...
+13     Cmd cmd = { cmdSetCoeff2, 12 };
+14     cmd_q.push(cmd);
+15     ...
+16 }
+17 //---------------------------------------------------------------------
+18 template<> void Proc2::exec()
+19 {
+20     ...
+21     Cmd cmd;
+22     if( cmd_q.pop(cmd, 10) ) // wait for data, timeout 10 system ticks
+23     {
+24         ... // data incoming, do something
+25     }
+26     else
+27     {
+28         ... // timeout expires, do something else
+29     }
+30     ...
+31 }
+32 //---------------------------------------------------------------------
 ```
-/// Caption
-Listing 12. Example of Using a Queue Based on a Channel.
+
+/// Caption  
+Listing 12. Example of Using a Queue Based on a Channel  
 ///
 
-As can be seen, usage is quite simple and transparent. In one process (Proc1), a command message `cmd` is created (13), initialized with the required values, and written to the channel queue (14). In another process (Proc2), there is a wait for data from the queue (22). If data arrives, the corresponding code is executed (23)-(25); if the timeout expires, different code is executed (27)-(29).
+As shown, usage is straightforward and clear. In one process (`Proc1`), a command message `cmd` is created (line 13), initialized, and written to the channel queue (line 14). In the other process (`Proc2`), data is awaited from the queue (line 22); upon arrival, corresponding code executes (lines 23–25), while timeout triggers alternative code (lines 27–29).
 
 ----
 
-## Final Remarks
+## Concluding Remarks
 
-There is a certain invariant relationship among different interprocess communication services. That is, using some services (or, more often, a combination thereof), you can accomplish the same task as with others. For example, instead of using a channel, you could create a static array and exchange data through it using mutual exclusion semaphores to prevent concurrent access and event flags to notify the waiting process that data is ready for it. In some cases, such an implementation might be more efficient, albeit less convenient.
+There is a certain invariance among the various interprocess communication services. In other words, one service (or, more commonly, a combination of them) can accomplish the same task as another. For example, instead of using a channel, a static array could be created and data exchanged through it, employing mutual-exclusion semaphores to prevent concurrent access and event flags to notify a waiting process that data is ready. In some cases, such an implementation may prove more efficient, albeit less convenient.
 
-You could use messages for event synchronization instead of event flags—this approach makes sense if you also need to transmit some information along with the flag. In fact, that's precisely what `OS::message` is designed for. The variety of uses is great, and which option is best suited for a particular situation is determined primarily by the situation itself.
+Messages can be used for event synchronization instead of event flags—this approach makes sense when additional information needs to be transferred along with the flag. In fact, `OS::message` is specifically designed for this purpose. The variety of possible uses is vast, and the best choice for a given situation depends primarily on the specifics of that situation.
 
 !!! info "**TIP**"
 
-    It is necessary to understand and remember that any interprocess communication service, while performing its functions, does so within a critical section, i.e., with interrupts disabled. Therefore, you should not overuse interprocess communication services where they can be avoided.
+    It is important to understand and remember that any interprocess communication service performs its operations within a critical section (i.e., with interrupts disabled). Therefore, these services should not be overused where they can be avoided.
 
-    For example, using a mutual exclusion semaphore when accessing a static variable of a built-in type is not a good idea compared to simply using a critical section, because the semaphore also uses critical sections when locking and unlocking, and the time spent in them is longer than during simple variable access.
+    For example, when accessing a static variable of a built-in type, using a mutual-exclusion semaphore is not a good idea compared to simply employing a critical section. A semaphore itself uses critical sections during locking and unlocking, and the time spent in them is longer than that required for direct variable access.
 
-There are certain peculiarities when using services within interrupts. For example, it is obvious that using `TMutex::lock()` inside an interrupt handler is a rather bad idea because, firstly, mutual exclusion semaphores are intended for resource sharing at the process level, not the interrupt level. Secondly, waiting for a resource to be released inside an interrupt handler will not work anyway and will only lead to the process interrupted by this interrupt being transitioned to a waiting state at an inappropriate and unpredictable point. Effectively, the process will be placed in an inactive state, from which it can only be recovered using the `TBaseProcess::force_wake_up()` function. In any case, nothing good will come of this.
+When using services in interrupt handlers, certain peculiarities arise. For instance, it is clearly a poor idea to call `TMutex::lock()` inside an interrupt handler: first, mutual-exclusion semaphores are intended for resource sharing at the process level, not the interrupt level; second, waiting for a resource to be released inside an ISR is impossible anyway and would only result in the interrupted process being placed into a waiting state at an inappropriate and unpredictable point. Effectively, the process would enter an inactive state from which it could only be extracted using `TBaseProcess::force_wake_up()`. In any case, nothing good would come of it.
 
-A somewhat similar situation can arise when using channel objects in an interrupt handler. You cannot wait for data from a channel inside an ISR, and the consequences will be similar to those described above. Writing data to a channel is also not entirely safe. If, for instance, there is insufficient space in the channel when writing, the program's behavior will be far from what the user expects.
+A somewhat similar situation can occur when using channel objects in an interrupt handler. Waiting for data from a channel inside an ISR is impossible, with consequences analogous to those described above. Writing data to a channel is also not entirely safe—if insufficient space is available during a write, program behavior will deviate significantly from user expectations.
 
 !!! warning "**RECOMMENDATION**"
+    For operations inside interrupt handlers, use service member functions with the `_isr` suffix—these are specially designed versions that ensure both efficiency and safety when employing interprocess communication services within interrupts.
 
-    For work inside interrupts, you should use the service member functions with the `_isr` suffix—these are specially developed versions that ensure efficiency and safe use of interprocess communication services within interrupts.
-
-And, of course, if the existing set of interprocess communication services does not meet the needs of a particular project for some reason, it is always possible to design a custom service class based on the provided foundation in the form of `TService`. In doing so, the standard set of services can serve as design examples.
+And, of course, if the existing set of interprocess communication services does not meet the needs of a particular project for any reason, it is always possible to design a custom service class tailored to specific requirements, building upon the provided base class `TService`. The standard set of services can serve as practical examples for such design.

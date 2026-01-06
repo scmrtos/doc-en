@@ -1,22 +1,22 @@
-# OS Kernel
+# Kernel
 
-----
+---
 
 ## General Information
 
-The operating system kernel performs the following functions:
+The OS kernel performs:
 
-*   Process organization and management.
-*   Scheduling at both the process and interrupt levels.
-*   Support for inter-process communication.
-*   System time support (system timer).
-*   Support for extensions.
+* Process organization functions;
+* Scheduling at both process and interrupt levels;
+* Support for **interprocess communication services**;
+* System time support (system timer);
+* Extension support.
 
-The core of the system is the `TKernel` class, which contains all the necessary set of functions and data. For obvious reasons, only a single instance of this class exists. Almost all of its internal representation is private. To allow access from certain parts of the OS that require its resources, the C++ "friend" mechanism is used — functions and classes granted such access are declared with the `friend` keyword.
+The core of the system is the `TKernel` class, which includes all the necessary functions and data. For obvious reasons, there is only one instance of this class. Almost its entire implementation is private, and to allow access from certain OS parts that require kernel resources, the C++ "friend" mechanism is used — functions and classes granted such access are declared with the `friend` keyword.
 
-It is important to note that in this context, the term "kernel" refers not only to the `TKernel` object but also to the functional extension facility implemented as the `TKernelAgent` class. This class was specifically introduced into the operating system to provide a base for building extensions. Looking ahead, it can be noted that in **scmRTOS**, all inter-process communication facilities are implemented based on such an extension. The `TKernelAgent` class is declared as a `friend` of the `TKernel` class and contains a minimal necessary set of `protected` functions to provide its descendants with access to kernel resources. Extensions are built by inheriting from the `TKernelAgent` class. For more details, see [TKernelAgent and Extensions](kernel.md#kernel-agent).
+It should be noted that in this context, the kernel refers not only to the `TKernel` object but also to the extension mechanism implemented as the `TKernelAgent` class. This class was specifically introduced to provide a base for building extensions. Looking ahead, all **interprocess communication services** in **scmRTOS** are implemented as such extensions. The `TKernelAgent` class is declared as a "friend" of `TKernel` and contains the minimal necessary set of protected functions to grant descendants access to kernel resources. Extensions are built by inheriting from `TKernelAgent`. For more details, see [TKernelAgent and Extensions](kernel.md#kernel-agent).
 
-----
+---
 
 ## TKernel. Composition and Operation
 
@@ -24,84 +24,88 @@ It is important to note that in this context, the term "kernel" refers not only 
 
 The `TKernel` class contains the following data members[^1]:
 
-*   `CurProcPriority`&nbsp;– A variable containing the priority number of the currently active process. Serves for quick access to the current process's resources and for manipulating the process's status (both in relation to the kernel and to IPC facilities)[^2].
-*   `ReadyProcessMap`&nbsp;– A map of processes ready for execution. Contains tags of processes ready to run: each bit of this variable corresponds to a specific process. A logical `1` indicates that the process is ready for execution[^3], a logical `0` indicates that it is not ready.
-*   `ProcessTable`&nbsp;– An array of pointers to processes registered in the system.
-*   `ISR_NestCount`&nbsp;– A counter for interrupt entries. It is incremented on each entry and decremented on each exit.
-*   `SysTickCount`&nbsp;– A counter for system timer ticks (overflows). Present only if this feature is enabled (via the corresponding macro in the configuration file).
-*   `SchedProcPriority`*&nbsp;– A variable for storing the priority value of the process scheduled to receive control.
+* `CurProcPriority` — variable holding the priority number of the current active process. Used for quick access to the current process resources and for manipulating process status (both relative to the kernel and to interprocess communication services)[^2];
+* `ReadyProcessMap` — map of processes ready for execution. Contains tags of ready processes: each bit corresponds to a specific process, with logical 1 indicating the process is ready[^3], and logical 0 indicating it is not;
+* `ProcessTable` — array of pointers to processes registered in the system;
+* `ISR_NestCount` — interrupt nesting counter variable. Incremented on each interrupt entry and decremented on each exit;
+* `SysTickCount` — system timer tick (overflow) counter variable. Present only if this feature is enabled (via the corresponding macro in the configuration file);
+* `SchedProcPriority`* — variable for storing the priority value of the process scheduled to receive control.
 
 [^1]: Objects marked with ‘\*’ are present only in the variant using software interrupt-based control transfer.
-[^2]: Perhaps, from an ideological standpoint, using a pointer to the process for these purposes would be more correct. However, analysis showed no performance gain, and the size of a pointer is typically larger than that of an integer variable for storing a priority.
-[^3]: At the same time, the process can be active (i.e., executing) or inactive (i.e., waiting to gain control). The latter situation occurs when there is another ready-to-run process in the system with a higher priority.
 
-### Process Setup
+[^2]: Ideologically, using a pointer to the process might seem more correct for these purposes, but analysis showed no performance gain, and the pointer size is typically larger than an integer variable for storing priority.
 
-The process setup essentially involves registering created processes. In the constructor of each process, the kernel function `register_process(TBaseProcess *)` is called. This function places the pointer to the process (passed as an argument) into the system's `ProcessTable` (see below). The position of this pointer in the table is determined according to the process's priority, which effectively serves as an index for accessing the table. See "Listing 1. Process Registration Function" for the code.
+[^3]: The process may be active (executing) or inactive (waiting for control) — the latter occurs when there is another ready process with higher priority.
+
+### Process Organization
+
+The process organization function reduces to registering created processes. In each process constructor, the kernel function `register_process(TBaseProcess *)` is called, which places the pointer to the passed process into the system `ProcessTable` (see below). The position in the table is determined by the process priority, which effectively serves as the table index. The process registration function code is shown in "Listing 1. Process Registration Function".
 
 ```cpp
-1    void OS::TKernel::register_process(OS::TBaseProcess * const p)
-2    {
-3        ProcessTable[p->Priority] = p;
-4    }
+void OS::TKernel::register_process(OS::TBaseProcess * const p)
+{
+    ProcessTable[p->Priority] = p;
+}
 ```
+
 /// Caption
 Listing 1. Process Registration Function
 ///
 
-The next system function is the actual OS startup. See "Listing 2. OS Startup Function" for the code.
+The next system function is the actual OS startup. The system startup function code is shown in "Listing 2. OS Startup Function".
 
 ```cpp
-1    INLINE void OS::run()
-2    {
-3        stack_item_t *sp = Kernel.ProcessTable[pr0]->StackPointer;
-4        os_start(sp);
-5    }
+INLINE void OS::run()
+{
+    stack_item_t *sp = Kernel.ProcessTable[pr0]->StackPointer;
+    os_start(sp);
+}
 ```
+
 /// Caption
 Listing 2. OS Startup Function
 ///
 
-The actions are quite simple: the stack pointer of the highest-priority process is retrieved from the process table (3), and the system is actually started (4) by calling the low-level function `os_start()` with the retrieved stack pointer as an argument.
+As seen, the actions are extremely simple: the stack pointer of the highest-priority process is retrieved from the process table (line 3), and the system is started (line 4) by calling the low-level `os_start()` function, passing it the retrieved stack pointer of the highest-priority process.
 
-From this moment, the OS begins operating in its primary mode, i.e., transferring control from process to process according to their priorities, events, and the user program.
+From this moment, the OS begins operating in normal mode — control is transferred between processes according to their priorities, events, and the user program.
 
 ### Control Transfer
 
-Control can be transferred in two ways:
+Control transfer can occur in two ways:
 
-*   A process voluntarily relinquishes control when it has nothing more to do (for the moment), or as a result of its operation, it needs to engage in inter-process communication (e.g., acquire a mutex semaphore (`OS::TMutex`) or signal an event flag (`OS::TEventFlag`)). This informs the kernel, which must then perform process rescheduling if necessary.
-*   Control is taken from a process by the kernel as a result of an interrupt triggered by some event. If a higher-priority process was waiting for this event, control will be given to that process. The interrupted process will wait until the higher-priority one completes its task and relinquishes control[^4].
+* The process voluntarily yields control when it has nothing more to do (for now), or as a result of its work, it needs to engage in interprocess communication with other processes (acquire a mutual exclusion semaphore (`OS::TMutex`), or, after signaling an event flag (`OS::TEventFlag`), notify the kernel, which must then perform (if necessary) process rescheduling;
+* Control is taken from the process by the kernel due to an interrupt triggered by some event; if a higher-priority process was waiting for that event, control is given to it, and the interrupted process waits until the higher-priority one completes its task and yields control[^4].
 
-[^4]: This higher-priority process can, in turn, be interrupted by an even higher-priority process, and so on, up to the highest-priority process. The highest-priority process can only be (temporarily) interrupted by a hardware interrupt, and upon return from that interrupt, control will always go back to this same highest-priority process. Thus, the highest-priority process cannot be preempted by any other process. Upon exiting an interrupt handler, control is always transferred to the highest-priority process ready for execution.
+[^4]: This higher-priority process may in turn be interrupted by an even higher-priority one, and so on, until the highest-priority process is reached — it can only be (temporarily) interrupted by an interrupt handler, but upon return, control always goes back to it. Thus, the highest-priority process cannot be preempted by any other process. Upon exiting an interrupt handler, control always passes to the highest-priority ready process.
 
-In the first case, process rescheduling is performed **synchronously** relative to the program execution flow — within the scheduler code. In the second case, rescheduling occurs **asynchronously** upon the occurrence of an event.
+In the first case, rescheduling is synchronous relative to program execution flow — in the scheduler code. In the second case, it is asynchronous upon event occurrence.
 
-The actual control transfer can be organized in several ways. One method is **direct control transfer** by calling a low-level[^6] context switch function from the scheduler[^5]. Another method is control transfer by **activating a special software interrupt**, where the context switch takes place. **scmRTOS** supports both methods. Each approach has its own advantages and disadvantages, which will be discussed in detail later.
+Control transfer itself can be organized in several ways. One is direct transfer by calling a low-level[^6] context switcher function from the scheduler[^5]. Another is by triggering a special software interrupt where the context switch occurs. **scmRTOS** supports both methods. Each has advantages and disadvantages, discussed in detail below.
 
-[^5]: Or upon exiting an interrupt handler — depending on whether the control transfer is synchronous or asynchronous.
-[^6]: Usually implemented in assembly language.
+[^5]: Or upon interrupt handler exit — depending on whether the transfer is synchronous or asynchronous.
 
-### The Scheduler
+[^6]: Usually implemented in assembly.
 
-The scheduler's source code is implemented in the `sched()` function — see "Listing 3. The Scheduler".
+### Scheduler
 
-Two variants are present here — one for the case of direct control transfer (`scmRTOS_CONTEXT_SWITCH_SCHEME == 0`), and another for control transfer using a software interrupt.
+The scheduler source code is in the `sched()` function — see "Listing 3. Scheduler".
 
-It should be noted that invoking the scheduler from the main program level is done via the `scheduler()` function. This function calls the actual scheduler (`sched()`) only if the call is not made from within an interrupt:
+There are two variants: one for direct control transfer (`scmRTOS_CONTEXT_SWITCH_SCHEME == 0`), the other for software interrupt-based transfer.
+
+Note that scheduling from the main program level is done via the `scheduler()` function, which calls the actual scheduler only if not invoked from an interrupt:
 
 ```cpp
-INLINE void scheduler() { if(ISR_NestCount) return; else  sched(); }
+INLINE void scheduler() { if(ISR_NestCount) return; else sched(); }
 ```
 
-With proper use of the OS facilities, this situation should not occur, because invoking the scheduler from interrupt level should be done through specialized versions of the corresponding functions (their names have the `_isr` suffix), which are specifically designed for use within interrupts.
+With proper use of OS services, this situation should not occur, as scheduling from interrupts should use specialized versions of functions (names suffixed with `_isr`) designed for interrupt level.
 
-For example, if it is necessary to signal an event flag from within an interrupt, the user must use the `signal_isr()`[^7] function instead of `signal()`. However, if the latter is used by mistake, no fatal runtime error will occur; the scheduler simply will not be invoked. Consequently, despite an event possibly occurring within the interrupt, a control transfer will not happen, even if its turn has arrived.
+For example, to signal an event flag from an interrupt, the user should use `signal_isr()`[^7] instead. However, using the non-\_isr version won't cause a fatal error — the scheduler simply won't be called, and despite the event arriving in the interrupt, no control transfer occurs, even if it was due.
 
-The control transfer will only occur during the next call to reschedule, which happens when the destructor of the `TISRW`/`TISRW_SS` object is executed. Thus, the check in the `scheduler()` function serves as protection against program crashes due to careless use of services, as well as when using services for which corresponding `_isr` functions are not provided — for example, `channel::push()`.
+Control transfer happens only at the next rescheduling call, which occurs when the destructor of a `TISRW/TISRW_SS` object executes. Thus, `scheduler()` provides protection against program crashes from careless service use or services lacking `_isr` versions — e.g., `channel::push()`.
 
-[^7]: All interrupt handlers in a program that use inter-process communication facilities must contain a declaration of a `TISRW` object placed **before** any call to a service function (i.e., where the scheduler might be invoked). This object must be declared before the first use of any OS services.
-
+[^7]: All interrupt handlers using interprocess communication services must declare a `TISRW` object before any service call (i.e., where scheduling may occur). This object must be declared before the first OS service use.
 
 ```cpp
 01    bool OS::TKernel::update_sched_prio()
@@ -150,73 +154,74 @@ The control transfer will only occur during the next call to reschedule, which h
 43    }
 44    #endif // scmRTOS_CONTEXT_SWITCH_SCHEME
 ```
+
 /// Caption
-Listing 3. The Scheduler
+Listing 3. Scheduler
 ///
 
 #### Scheduler with Direct Control Transfer
 
-All actions performed inside the scheduler must be non-interruptible; therefore, the code of this function executes within a critical section. However, since the scheduler is always called with interrupts disabled, using a critical section in its code is unnecessary.
+All actions inside the scheduler must be non-interruptible, so the function code executes in a critical section. However, since the scheduler is always called with interrupts disabled, no explicit critical section is needed.
 
-The first step is to calculate the priority of the highest-priority process ready for execution (by analyzing the `ReadyProcessMap`&nbsp;– the map of processes ready to run).
+First, the priority of the highest-priority ready process is computed (by analyzing the ready process map `ReadyProcessMap`).
 
-Next, the found priority is compared with the current one. If they match, the current process is indeed the highest-priority one ready to run, and no control transfer to another process is required; the execution flow remains within the current process.
+The found priority is compared to the current one. If they match, the current process is the highest-priority ready one, no transfer is needed, and execution continues in the current process.
 
-If the found priority does not match the current one, it means a process with a higher priority than the current one has become ready to run, and control must be transferred to it. This is achieved by switching process contexts. The context of the current process is saved onto its stack, and the context of the next process is restored from its stack. These actions are platform-dependent and are performed in the low-level (assembly-implemented) function `os_context_switcher()`, which is called from the scheduler (26). This function receives two arguments:
+If they differ, a higher-priority ready process has appeared, and control must transfer to it via context switch. The current process context is saved to its stack, and the next process context is restored from its stack. These platform-dependent actions are performed in the low-level (assembly) `os_context_switcher()` function called from the scheduler (line 26). It receives two parameters:
 
-*   The address of the current process's stack pointer, where the pointer itself will be stored after saving the current process's context (24).
-*   The stack pointer of the next process (23).
+* Address of the current process stack pointer, where the pointer itself will be stored after saving the current context (line 24);
+* Stack pointer of the next process (line 23).
 
-When implementing the low-level context switch function, attention must be paid to the calling conventions and parameter passing for the specific platform and compiler.
+When implementing the low-level context switcher, pay attention to the platform and compiler calling conventions and parameter passing.
 
 #### Scheduler with Software Interrupt
 
-In this variant, the scheduler differs significantly from the one described above. The main difference is that the actual context switch does not occur via a direct call to the context switcher function but by activating a special interrupt, within which the context switch takes place. This method harbors several nuances and requires special measures to prevent disruption of the system's integrity.
+This variant differs significantly from the above. The main difference is that the actual context switch occurs not by directly calling the context switcher but by triggering a special software interrupt where the switch happens. This approach has nuances and requires special measures to prevent system integrity violations.
 
-The primary difficulty in implementing this control transfer method is that the scheduler code itself and the software interrupt handler code are not strictly continuous or "atomic"; an interrupt can occur between them, which could also initiate rescheduling. This would cause a kind of "overlap" of the current rescheduling results and disrupt the integrity of the control transfer process. To avoid this conflict, the "rescheduling-control transfer" process is split into two "atomic" operations that can be safely separated from each other.
+The primary challenge in implementing this control transfer method is that the scheduler code and the software interrupt handler code are not strictly continuous or "atomic"—an interrupt can occur between them, potentially triggering another rescheduling and causing an overlap that corrupts the control transfer process. To avoid this collision, the "rescheduling-control transfer" process is divided into two "atomic" operations that can be safely separated.
 
-The first operation is, as before, calculating the priority of the highest-priority ready process — calling the `update_sched_prio()` function (01) — and checking the need for rescheduling (32). If such a need exists, the priority value of the next process is recorded in the `SchedProcPriority` variable (07), and the context switch software interrupt is activated (34). The program then enters a loop waiting for the context switch (35).
+The first operation is, as before, computing the priority of the highest-priority ready process—via the call to `update_sched_prio()` (line 01)—and checking whether rescheduling is necessary (line 32). If it is, the priority value of the next process is stored in the `SchedProcPriority` variable (line 07), and the software context switch interrupt is raised (line 34). The program then enters a loop waiting for the context switch to occur (line 35).
 
-A rather subtle point is hidden here. One might ask, why not simply implement the enabled-interrupts zone as a pair of dummy instructions (to give the processor hardware time to actually trigger the interrupt)? Such an implementation contains a subtle error, which consists of the following.
+This hides a rather subtle point. Why not, for example, simply implement the interrupt-enabled window with a pair of dummy instructions (to give the processor hardware time to actually trigger the interrupt)? Such an implementation conceals a hard-to-detect error, as follows.
 
-If, at the moment when context switching is enabled (which in this OS version is implemented by globally enabling interrupts (37)), one or several other interrupts besides the software interrupt were pending, and the priority of some of them is higher than that of the software interrupt, then control will naturally be transferred to the handler of that higher-priority interrupt. Upon its completion, a return will be made to the interrupted program. Now, in the main program (i.e., inside the scheduler function), the processor may execute one or several instructions[^8] before the next interrupt can be activated.
+If, at the moment interrupts are enabled—which in this OS version is implemented by globally enabling interrupts (line 37)—one or more other interrupts are pending in addition to the software interrupt, and some of them have higher priority than the software context switch interrupt, control will naturally transfer to the handler of the corresponding interrupt. Upon completion, execution returns to the interrupted program. At this point, in the main program (i.e., inside the scheduler function), the processor may execute one or more instructions[^8] before the next interrupt can be serviced.
 
-[^8]: This is a common property of many processors — after returning from an interrupt, a jump to the handler of the next interrupt is not possible immediately in the same machine cycle, but only after one or more cycles.
+[^8]: This is a common property of many processors—after returning from an interrupt, transitioning to the next interrupt handler is not possible immediately in the same machine cycle but only after one or more cycles.
 
-In this case, the program might reach the code that disables context switching, which would lead to interrupts being globally disabled, and the software interrupt, where the context switch is performed, would not be executed. This means the execution flow would remain in the current process, while it should have been transferred to the system (and other processes) until an event that the current process is waiting for occurs. This is nothing other than a breach of system integrity and can lead to a wide variety of difficult-to-predict negative consequences.
+The program could then reach the code that disables context switching, resulting in interrupts being globally disabled and preventing the software interrupt (where the context switch occurs) from executing. This means control would remain in the current process, even though it should have been transferred to the system (and other processes) until the event awaited by the current process occurs. This is nothing less than a violation of system integrity and can lead to a wide variety of unpredictable negative consequences.
 
-Obviously, such a situation must not arise. Therefore, instead of a few dummy instructions in the enabled-interrupts zone, a loop waiting for the context switch is used. That is, no matter how many interrupts are queued, until an actual context switch occurs, the program's execution flow will not proceed beyond this loop.
+Clearly, such a situation must not arise. Therefore, instead of a few dummy instructions in the interrupt-enabled window, a context switch wait loop is used. No matter how many interrupts are queued, program control does not proceed beyond this loop until the actual context switch has occurred.
 
-For the described mechanism to work, a criterion is needed to determine that rescheduling has indeed occurred. Such a criterion can be the equality of the kernel variables `CurProcPriority` and `SchedProcPriority`. These variables become equal to each other (i.e., the value of the current priority becomes equal to the scheduled value) only after the context switch has been performed.
+To make this mechanism work, a criterion is needed to confirm that rescheduling has actually taken place. This criterion is the equality of the kernel variables `CurProcPriority` and `SchedProcPriority`. These variables become equal (i.e., the current priority value matches the scheduled one) only after the context switch has been performed.
 
-As can be seen, there are no updates here to variables containing stack pointers or the current priority value. All these actions are performed later during the actual context switch by calling a special kernel function `os_context_switch_hook()`.
+As can be seen, no updates are made here to variables holding stack pointers or the current priority value. All such actions are performed later during the actual context switch by calling the special kernel function `os_context_switch_hook()`.
 
-One might wonder: why such complexity? To answer this question, consider a scenario: suppose, in the case of context switching via a software interrupt, the scheduler implementation remained the same as in the case of a direct call to the context switcher. But the call:
+One might ask: why all this complexity? To answer, consider a scenario where, in the software interrupt case, the scheduler implementation remained the same as in the direct context switcher call—only instead of:
 
 ```cpp
 os_context_switcher(Curr_SP_addr, Next_SP);
 ```
 
-is replaced by[^9]:
+we have[^9]:
 
 ```cpp
 raise_context_switch();
 <wait_for_context_switch_done>;
 ```
 
-[^9]: `<wait_for_context_switch_done>` implies all the code that ensures context switching from starting of interrupts enabling.
+[^9]: Here, `<wait_for_context_switch_done>` represents all the code ensuring the context switch, starting from enabling interrupts.
 
-Now, consider a situation where, at the moment interrupts are enabled, one or several other interrupts are pending, and at least one of them has a higher priority than the software interrupt for context switching. Furthermore, in the handler of this higher-priority pending interrupt, a service function (an inter-process communication facility) is called. What would happen in this case?
+Now imagine a situation where, at the moment interrupts are enabled, one or more other interrupts are pending, at least one of which is higher priority than the software context switch interrupt, and the handler for that higher-priority pending interrupt calls one of the interprocess communication service functions. What happens then?
 
-In this case, the scheduler would be called again, and another process rescheduling would occur. However, since the previous rescheduling was not completed—i.e., the processes did not actually switch, and contexts were not physically saved and restored—the new rescheduling would simply overwrite the variables containing the pointers to the current and next processes.
+The scheduler would be invoked again, triggering another process rescheduling. However, since the previous rescheduling was not completed—i.e., processes were not actually switched, contexts were not physically saved and restored—the new rescheduling would simply overwrite the variables holding the current and next process pointers.
 
-Moreover, when determining the need for rescheduling, the value of `CurProcPriority` would be used, which is actually incorrect because this value represents the priority of the next process scheduled during the previous scheduler call. In short, a "overlap" of scheduling operations would occur, disrupting the integrity of the system's operation.
+Moreover, when determining the need for rescheduling, the value of `CurProcPriority` would be used, which is effectively incorrect because it holds the priority of the process scheduled from the previous scheduler invocation. In short, rescheduling operations would overlap, violating system integrity.
 
-Therefore, it is crucial that the actual update of the `CurProcPriority` value and the switching of process contexts are "atomic"—indivisible and not interrupted by any other code related to process scheduling. In the variant with direct context switcher call, this rule is inherently satisfied—the entire scheduler's work happens within a critical section, and the context switcher is called directly from there.
+Therefore, it is critical that the actual update of `CurProcPriority` and the process context switch be "atomic"—inseparable and not interrupted by other code related to process scheduling. In the direct context switcher call variant, this rule is inherently satisfied: the entire scheduler operates in a critical section, and the context switcher is called directly from there.
 
-In the software interrupt variant, scheduling and context switching can be "separated" in time. Therefore, the actual context switch and the change of the current priority occur directly during the execution of the software interrupt handler[^10]. Immediately after saving the context of the current process, the `os_context_switch_hook()` function is called (where the `CurProcPriority` value is directly updated). Also, the stack pointer of the current process is passed to `os_context_switch_hook()`, where it is saved in the current process object, and the stack pointer of the next process, required for restoring its context and subsequently transferring control to it, is retrieved and returned from the function.
+In the variant with software interrupt, context scheduling and switching can be "separated" in time. Therefore, the actual switching and updating of the current priority occur directly during the execution of the software interrupt handler[^10]. In it, immediately after saving the context of the current process, the function `os_context_switch_hook()` is called (where the value of `CurProcPriority` is actually updated), and the stack pointer of the current process is passed to `os_context_switch_hook()`, where it is saved in the current process object. The stack pointer of the next process is then retrieved and returned from the function, which is necessary for restoring the context of that process and subsequently transferring control to it.
 
-To avoid degrading performance in interrupt handlers, there is a special lightweight, inline version of the scheduler used by some member functions of service objects optimized for use in ISRs. See "Listing 4. Scheduler Variant Optimized for Use in ISR" for the code of this scheduler version.
+To avoid degrading performance characteristics in interrupt handlers, there is a special lightweight embedded version of the scheduler used by some member functions of service objects, optimized for use in ISRs. The code for this scheduler version is shown in "Listing 4. Scheduler variant optimized for use in ISR".
 
 [^10]: This software interrupt handler is always implemented in assembly and is also platform-dependent, so its code is not provided here.
 
@@ -229,177 +234,172 @@ To avoid degrading performance in interrupt handlers, there is a special lightwe
 06        }
 07    }
 ```
-/// Caption
-Listing 4. Scheduler Variant Optimized for Use in ISR
+
+/// Caption  
+Listing 4. Scheduler variant optimized for use in ISR  
 ///
 
-When selecting the context switch interrupt handler, preference should be given to the one with the lowest priority (in the case of a priority interrupt controller). This helps avoid unnecessary rescheduling and context switches when several interrupts occur in succession.
+When selecting an interrupt handler for context switching, preference should be given to one with the lowest priority (in the case of a priority interrupt controller). This avoids unnecessary rescheduling and context switches if multiple interrupts occur in succession.
 
-### Pros and Cons of Control Transfer Methods
+### Pros and Cons of Control Transfer Methods  
+Both methods have their advantages and disadvantages. The strengths of one control transfer method are the weaknesses of the other, and vice versa.
 
-Both methods have their advantages and disadvantages. The advantages of one control transfer method are the disadvantages of the other, and vice versa.
+#### Direct Control Transfer  
+The main advantage of direct control transfer is that it does not require a special software interrupt in the target MCU—not all MCUs have this hardware capability. A secondary minor benefit is slightly higher performance compared to the software interrupt variant, as the latter incurs additional overhead for activating the context switch interrupt handler, the wait cycle for context switching, and the call to `os_context_switch_hook()`.
 
-#### Direct Control Transfer
+However, the direct control transfer variant has a significant drawback: when the scheduler is called from an interrupt handler, the compiler is forced to save the "local context" (scratch registers of the processor) due to the call to a non-inlined context switch function, which introduces overhead that can be substantial compared to the rest of the ISR code. The negative aspect here is that saving these registers may be entirely unnecessary—after all, in that function[^11], which causes them to be saved, these registers are not used. Therefore, if there are no further calls to non-inlined functions, the code for saving and restoring this group of registers turns out to be redundant.
 
-The main advantage of direct control transfer is that implementing this variant does not require a dedicated software interrupt in the target MCU—not all MCUs have such hardware capability. A second minor advantage is slightly higher performance compared to the software interrupt variant, as the latter incurs additional overhead for activating the context switch interrupt handler, the loop waiting for context switch, and the call to `os_context_switch_hook()`.
-
-The direct control transfer variant has a serious drawback—when the scheduler is called from an interrupt handler, the compiler is forced to save the "local context" (the processor's scratch registers) due to the call to a non-inline context switch function. This overhead can be quite significant compared to the rest of the ISR code. The negative aspect here is that saving these registers may be completely unnecessary—since the function[^11] that necessitates their saving does not use these registers. Therefore, if there are no more calls to non-inline functions, the code for saving and restoring this register group becomes redundant.
-
-[^11]:
+[^11]:  
 ```cpp
 os_context_switcher(stack_item_t **Curr_SP, stack_item_t *Next_SP)
 ```
 
-#### Software Interrupt-Based Control Transfer
+#### Software Interrupt-Based Control Transfer  
+This variant avoids the aforementioned drawback. Since the ISR itself executes normally without rescheduling from within it, saving the "local context" is also not performed, significantly reducing overhead and improving system performance. To avoid spoiling the picture by calling a non-inlined member function of an interprocess communication service object, it is recommended to use special lightweight, inlinable versions of such functions—for more details, see [the Inter-Process Communication section]([ipcs.md](http://ipcs.md)).
 
-This variant is free from the drawback described above. Because the ISR itself executes in the usual manner and no rescheduling is performed from within it, the saving of the "local context" is also not performed. This significantly reduces overhead and improves system performance. To avoid spoiling this advantage by calling a non-inline member function of an inter-process communication service object, it is recommended to use special, lightweight, inline versions of such functions—see the [Inter-Process Communication Facilities](ipcs.md) section for more details.
+The main disadvantage of software interrupt-based control transfer is that not all hardware platforms support software interrupts. In such cases, one of the unused hardware interrupts can be used as a software interrupt. Unfortunately, this introduces some lack of universality—it is not known in advance whether a particular hardware interrupt will be needed in a given project. Therefore, if the processor does not specifically provide a suitable interrupt, the choice of context switch interrupt is delegated (from the port level) to the project level, and the user must write the corresponding code[^12] themselves.
 
-The main disadvantage of control transfer using a software interrupt is that not all hardware platforms support a software interrupt. In such cases, one of the unused hardware interrupts can be used as this software interrupt. Unfortunately, this introduces a lack of universality—it is not known in advance whether a particular hardware interrupt will be required in a given project. Therefore, if the processor does not specifically provide a suitable interrupt, the choice of the context switch interrupt is delegated (from the port level) to the project level, and the user must write the corresponding code themselves[^12].
+[^12]: The **scmRTOS** distribution is offered with several working usage examples, where all the code for organizing and configuring the software interrupt is present. Thus, the user can simply modify this code to suit their project's needs or use it as-is if everything fits.
 
-[^12]: The **scmRTOS** distribution is offered with several working usage examples where all this code for organizing and configuring the software interrupt is present. Therefore, the user can simply modify this code for their project's needs or use it as-is if it suits them.
+When using software interrupt-based control transfer, the expression "The kernel takes control away from processes" fully reflects the situation.
 
-When using control transfer via a software interrupt, the expression "The kernel takes control away from the processes" fully reflects the situation.
+#### Conclusions  
+Given the above analysis of the advantages and disadvantages of both control transfer methods, the general recommendation is as follows: if the target platform provides a suitable interrupt for implementing context switching, it makes sense to use this variant, especially if the size of the "local context" is sufficiently large.
 
-#### Conclusions
+Using direct control transfer is justified when it is truly impossible to use a software interrupt—for example, when the target platform does not support such an interrupt, and using a hardware interrupt as a software one is impossible for one reason or another, or if the performance characteristics with this control transfer variant prove better due to lower overhead in organizing context switches, while saving/restoring the "local context" does not introduce noticeable overhead due to its small size[^13].
 
-Considering the above analysis of the advantages and disadvantages of both control transfer methods, the general recommendation is as follows: if the target platform provides a suitable interrupt for implementing context switching, it makes sense to use this variant, especially if the size of the "local context" is substantial.
+[^13]: For example, on **MSP430**/IAR, the "local context" consists of just 4 registers.
 
-Using direct control transfer is justified when using a software interrupt is practically impossible—for example, when the target platform does not support such an interrupt, or using a hardware interrupt as a software one is not feasible for various reasons. It may also be chosen if performance characteristics with this transfer method are better due to lower overhead for organizing context switches, and the saving/restoring of the "local context" does not incur significant overhead because of its small size[^13].
-
-[^13]: For example, on **MSP430**/IAR, the "local context" consists of only 4 registers.
-
-### Support for Inter-Process Communication
-
-Support for inter-process communication (IPC) boils down to providing a set of functions for monitoring process states and granting IPC facilities access to the rescheduling mechanisms of the OS. For more details, see the [Inter-Process Communication Facilities](ipcs.md) section.
+### Support for Interprocess Communication  
+Support for interprocess communication boils down to providing a set of functions for monitoring process states, as well as granting access to rescheduling mechanisms for the OS components—interprocess communication facilities. For more details on this, see [the Inter-Process Communication section](ipcs.md).
 
 ### Interrupts
 
-#### Usage Peculiarities with an RTOS and Implementation
+#### Usage Features with RTOS and Implementation
 
-An occurred interrupt can be the source of an event that needs to be handled by a specific process. Therefore, to minimize (and make deterministic) the response time to an event, process rescheduling and control transfer to the highest-priority ready process are used when necessary.
+An occurring interrupt can serve as a source of an event that requires handling by one or more processes. To minimize (and ensure determinism of) the response time to the event, process rescheduling is used when necessary, transferring control to the highest-priority process that is ready to run.
 
-The code of any interrupt handler that uses IPC services must call the `isr_enter()` function upon entry, which increments the `ISR_NestCount` variable, and call the `isr_exit()` function upon exit. The latter decrements `ISR_NestCount` and uses its value to determine the interrupt nesting level (in case of nested interrupts). When `ISR_NestCount` becomes 0, it indicates a return from the interrupt handler to the main program. At this point, `isr_exit()` performs process rescheduling (if needed) by calling the interrupt-level scheduler.
+The code of any interrupt handler that uses interprocess communication services must call the function `isr_enter()` at the beginning, which increments the variable `ISR_NestCount`, and call the function `isr_exit()` at the end, which decrements `ISR_NestCount` and determines the interrupt nesting level (in the case of nested interrupts) based on its value. When `ISR_NestCount` reaches zero, it indicates a return from the interrupt handler to the main program, and `isr_exit()` performs process rescheduling (if required) by invoking the interrupt-level scheduler.
 
-To simplify usage and ensure portability, the code executed upon entry and exit of interrupt handlers is placed in the constructor and destructor, respectively, of a special wrapper class—`TISRW`. An object of this type must be used within the interrupt handler[^14]. It is sufficient to create an object of this type in the interrupt handler code; the compiler will handle the rest. It is important that the declaration of this object comes before the first use of any service functions.
+To simplify usage and improve portability, the code executed at the entry and exit of interrupt handlers is placed in the constructor and destructor, respectively, of a special wrapper class—`TISRW`. An object of this type must be used within the interrupt handler[^14]. It is sufficient to create an object of this type in the interrupt handler code; the compiler will handle the rest automatically. Importantly, the declaration of this object must precede the first use of any service functions.
 
 [^14]: The aforementioned functions `isr_enter()` and `isr_exit()` are member functions of this wrapper class.
 
-It should be noted that if a non-inline function is called from within an interrupt handler, the compiler will save the "local context"—the scratch[^15] registers[^16]. Therefore, it is desirable to avoid calls to non-inline functions from interrupt handlers, as even partial context saving degrades both speed and code size[^17]. In light of this, the current version of **scmRTOS** includes special additional lightweight functions for some IPC objects intended for use within interrupt handlers. These functions are inline and use a lightweight version of the scheduler, which is also inline. For more details, see the [Inter-Process Communication Facilities](ipcs.md) section.
+It should be noted that if a non-inlinable function is called within an interrupt handler, the compiler will save the "local context"—the scratch[^15] registers[^16]. Therefore, it is advisable to avoid calls to non-inlinable functions from interrupt handlers, as even partial context saving degrades both execution speed and code size[^17]. For this reason, in the current version of **scmRTOS**, some interprocess communication objects have been augmented with special lightweight functions designed for use in interrupt handlers. These functions are inlinable and employ a lightweight version of the scheduler, which is also inlinable. For more details, see [the Interprocess Communication Services section](ipcs.md).
 
-[^15]: Typically, the compiler divides processor registers into two groups: scratch and preserved. Scratch registers are those that any function can use without prior saving. Preserved registers are those whose values must be saved if needed. In some contexts, preserved registers are called local; in the context discussed here, these terms are synonymous.
-[^16]: On different platforms, the proportion (of the total number) of these registers varies. For example, when using EWAVR, they occupy about half of the total, while with EW430, it's less than half. In the case of VisualDSP++/**Blackfin**, the proportion of these registers is large, but on this platform, stack sizes are typically sufficiently large not to worry about it.
-[^17]: Unfortunately, when using the direct control transfer scheme, a call to the non-inline context switch function occurs, making it impossible to avoid the overhead of saving scratch registers in this case.
+[^15]: Typically, the compiler divides processor registers into two groups: scratch and preserved. Scratch registers are those that any function may use without prior saving. Preserved registers are those whose values must be saved if the function needs to use them (the function must save the value before use and restore it afterward). In some cases, preserved registers are referred to as local; in the context discussed here, these terms are synonymous.
+
+[^16]: The proportion of these registers (relative to the total number) varies across platforms. For example, when using EWAVR, they account for roughly half of all registers; with EW430, less than half. In the case of VisualDSP++/**Blackfin**, the proportion of these registers is large, but on this platform, stack sizes are generally large enough that this is not a major concern.
+
+[^17]: Unfortunately, when using the direct control transfer scheme, a non-inlinable context switch function is called, so the overhead of saving scratch registers cannot be avoided in this case.
 
 #### Separate Interrupt Stack and Nested Interrupts
 
-Another aspect of using a preemptive RTOS is related to interrupts. As known, when an interrupt occurs and control is transferred to its handler, the program uses the stack of the interrupted process for its execution. This stack must have a size sufficient to meet the needs of both the process itself and any interrupt handler. Moreover, it must account for the combined worst-case scenario—for instance, when process execution occupies the peak stack space, and an interrupt occurs whose handler also consumes part of the stack. The stack size must be such that overflow does not occur even in this case.
+Another aspect related to interrupts in a preemptive RTOS is the use of a separate stack for interrupt handlers. As is well known, when an interrupt occurs and control is transferred to its handler, the program uses the stack of the interrupted process. This stack must be large enough to satisfy the needs of both the process itself and any interrupt handler. Moreover, it must accommodate the combined worst-case requirements—for example, when the process code has reached its peak stack usage and an interrupt occurs at that moment, with its handler also consuming additional stack space. The stack size must be sufficient to prevent overflow even in this scenario.
 
-Obviously, the above circumstances concern all processes in the system. If interrupt handlers consume a significant amount of stack space, the stack sizes of all processes must be increased by a certain amount. This leads to increased memory overhead. In the case of nested interrupts, the situation worsens dramatically.
+Clearly, the above considerations apply to all processes in the system. If interrupt handlers consume a significant amount of stack space, the stack sizes of all processes must be increased by a corresponding amount. This leads to higher memory overhead. In the case of nested interrupts, the situation becomes dramatically worse.
 
-To counter this effect, switching the processor's stack pointer to a dedicated interrupt stack upon the occurrence of an interrupt is employed. This way, process stacks and the interrupt stack become "decoupled" from each other, eliminating the need to reserve additional memory in each process's stack for interrupt handler execution.
+To mitigate this effect, the processor's stack pointer is switched to a dedicated interrupt stack upon entry into an interrupt handler. This effectively decouples the process stacks from the interrupt stack, eliminating the need to reserve additional memory in each process stack for interrupt handler operation.
 
-The implementation of a separate interrupt stack is done at the port level. Some processors have hardware support for switching the stack pointer to an interrupt stack, making the use of this capability efficient and safe[^18].
+The implementation of a separate interrupt stack is handled at the port level. Some processors provide hardware support for switching the stack pointer to the interrupt stack, making this feature efficient and safe[^18].
 
-[^18]: In this case, this mechanism is the only one implemented in the port, and there is no need for a separate implementation of the `TISRW_SS` wrapper class.
+[^18]: In such cases, this mechanism is the only one implemented in the port, and there is no need for a separate implementation of the `TISRW_SS` wrapper class.
 
-Nested interrupts—i.e., those whose handlers can interrupt not only the main program but also other interrupt handlers—also have specific usage characteristics. Understanding these is important for the effective and safe use of this mechanism. In the case of a processor with an interrupt controller supporting multi-level prioritized interrupts, the situation with nested interrupts is relatively straightforward—potential hazardous situations when enabling nested interrupts are generally accounted for by the processor designers, and the interrupt controller prevents mishaps, such as those described below.
+Nested interrupts—those whose handlers can interrupt not only the main program but also other interrupt handlers—have specific usage characteristics. Understanding these is essential for effective and safe application of the mechanism. When the processor has a priority-based interrupt controller supporting multiple priority levels, handling nested interrupts is relatively straightforward. Potential dangerous situations when enabling nesting are typically accounted for by the processor designers, and the interrupt controller prevents issues such as those described below.
 
-In the case of a processor with a single-level interrupt system, its implementation typically involves automatically disabling interrupts globally upon the occurrence of any interrupt. This is done for simplicity and safety. That is, nested interrupts are not supported in such a system. To enable nested interrupts, it is sufficient to perform a global enable interrupts operation, which on processors with a single-level interrupt system is typically disabled by hardware when control is transferred to an interrupt handler. In this scenario, a situation is possible where an already executing interrupt handler is called again—if a request for handling the same interrupt is still pending[^19].
+In processors with a single-level interrupt system, the typical implementation automatically disables interrupts globally upon any interrupt occurrence—for reasons of simplicity and safety. In other words, nested interrupts are not supported. To enable nesting, it is sufficient to globally re-enable interrupts, which are usually disabled by hardware when control is transferred to the handler. However, this can lead to a situation where an already executing interrupt handler is invoked again—if the interrupt request for the same source remains pending[^19].
 
-[^19]: This could be related, for example, to events triggering the interrupt too frequently or an uncleared interrupt flag that initiates the interrupt request.
+[^19]: This may occur, for example, due to events triggering the interrupt too frequently or because the interrupt flag was not cleared, continuing to assert the request.
 
-Typically, this is an erroneous situation that must be avoided. To prevent finding oneself in such a position, one must clearly understand both the processor's operational specifics and its "context"[^20], and write code very carefully: before globally enabling interrupts, disable the activation of the interrupt whose handler is already executing to avoid re-entry into the same handler. Upon completion of its work, do not forget to restore the processor's control resources to their original state, as it was before manipulating nested interrupt enabling.
+This is generally an erroneous situation that must be avoided. To prevent it, one must clearly understand both the processor's operational specifics and its current "context"[^20], and write code very carefully: before globally enabling interrupts, disable the activation of the interrupt whose handler is already running (to avoid re-entry into the same handler), and upon completion, remember to restore the processor's control resources to their original state before the nesting manipulations.
 
-Based on the above, the following recommendation can be given.
+Based on the above, the following recommendation can be made.
 
-[^20]: Here, "context" implies the logical and semantic environment in which this part of the program is executing.
+[^20]: Here, "context" refers to the logical and semantic environment in which this part of the program executes.
 
 !!! error "**WARNING**"
+    Despite the apparent advantages of a separate interrupt stack, it is not recommended on processors lacking hardware support for switching the stack pointer to the interrupt stack.
+    This is due to additional overhead from manual stack switching, poor portability—any non-standard extensions are a source of problems—and the fact that direct manipulation of the stack pointer can cause collisions with local object addressing. For example, the compiler, seeing the body of the interrupt handler, allocates[^21] memory for local objects on the stack—and does so before calling[^22] the wrapper constructor. As a result, after switching the stack pointer to the interrupt stack, the previously allocated memory will physically reside elsewhere, causing the program to malfunction, while the compiler cannot detect this issue.
+    Similarly, nested interrupts are not recommended on processors without hardware support for them. Such interrupts require careful handling and usually additional maintenance—for example, blocking the interrupt source to prevent re-invocation of the same handler when interrupts are enabled.
 
-    Despite the apparent advantage of the separate interrupt stack scheme, using this variant on processors that lack hardware support for switching the stack pointer to an interrupt stack is **not recommended**.
+[^21]: More precisely—reserves. This is typically done by modifying the stack pointer.
+[^22]: And it has every right to do so.
 
-    This is due to the additional overhead of stack switching, poor portability—any non-standard extensions are a source of problems—and the fact that directly interfering with stack pointer management can, in one way or another, cause conflicts with local object addressing. For example, the compiler, seeing the body of an interrupt handler, allocates[^21] memory for local objects on the stack. Moreover, it does this *before* the call[^22] to the wrapper's constructor. Thus, after switching the stack pointer to the interrupt stack, the memory allocated earlier will physically be in a different location. The program will then operate incorrectly, and the compiler will be unable to detect this situation.
-
-    Similarly, using nested interrupts on processors that do not support this capability in hardware is **not recommended**. Such interrupts require careful handling and typically need additional management—for instance, locking the interrupt source to prevent another call to the same handler when interrupts are enabled.
-
-[^21]: More precisely — reserves it. This is usually done by modifying the stack pointer.
-[^22]: It has every right to do so.
-
-**Brief conclusion.** The motivation for using stack pointer switching to an interrupt stack correlates with the use of nested interrupts—after all, in the case of nested interrupts, stack consumption (within interrupts) increases significantly. This imposes—in the absence of switching to a separate interrupt stack—additional requirements on the stack sizes of all processes[^23].
+Brief conclusion: The motivation for using a separate interrupt stack correlates with the use of nested interrupts—since nesting significantly increases stack consumption in interrupt handlers, imposing—in the absence of a separate interrupt stack—additional requirements on process stack sizes[^23].
 
 !!! tip "**TIP**"
+    When using a preemptive RTOS, it is possible to structure the program so that interrupt handlers serve only as event sources, with all event processing moved to the process level. This keeps interrupt handlers small and fast, in turn eliminating the need for both a separate interrupt stack and nested interrupt support. In this case, the interrupt handler body can be comparable in size to the overhead of switching to a separate interrupt stack and enabling nesting.
 
-    When using a preemptive RTOS, it is possible to structure the program so that interrupt handlers serve only as **event sources**, and all event processing is moved to the process level. This allows interrupt handlers to be small and fast, which, in turn, eliminates the need for both switching to an interrupt stack and enabling nested interrupts. In this case, the body of the interrupt handler can be comparable in size to the overhead of switching the stack pointer to an interrupt stack and enabling nested interrupts.
+[^23]: Moreover, each process must have a stack large enough to cover both its own needs and the stack consumption of interrupt handlers, including the full nesting hierarchy.
 
-[^23]: Furthermore, **each** process must have a stack size large enough to cover both the process's own needs and the stack consumption of interrupt handlers, including the entire nesting hierarchy.
+This approach is precisely what is recommended when the processor lacks hardware support for switching to a separate interrupt stack and does not have an interrupt controller with hardware nested interrupt support.
 
-This is precisely the recommended approach when the processor lacks hardware support for switching the stack pointer to an interrupt stack and does not have an interrupt controller with hardware support for nested interrupts.
+It should be noted that a priority-based preemptive RTOS is, in a sense, analogous to a multi-level priority interrupt controller—it provides the ability to distribute code execution according to importance/urgency. For this reason, in most cases there is no need to place event-processing code at the interrupt level even when such a hardware controller is present; instead, use interrupts solely as event sources[^24] and move their processing to the process level. This is the recommended programming style.
 
-It should be noted that a priority-based preemptive RTOS is, in a way, an analogue of a multi-level priority interrupt controller. That is, it provides the ability to distribute code execution according to importance/urgency. In this regard, in most cases, there is no need to place event handling code at the interrupt level, even if such a hardware controller exists. Instead, interrupts should be used only as **event sources**[^24], with their handling placed at the process level. This is the recommended program design style.
-
-[^24]: By making interrupt handlers as simple, short, and fast as possible.
+[^24]: Making interrupt handlers as simple, short, and fast as possible.
 
 ### System Timer
 
-The system timer is used to generate specific time intervals required for process operation. This includes timeout support.
+The system timer is used to generate specific time intervals required for process operation, including support for timeouts.
 
 Typically, one of the processor's hardware timers is used as the system timer[^25].
-The functionality of the system timer is implemented in the kernel function `system_timer()`. See "Listing 5. System Timer" for the code of this function.
 
-[^25]: The simplest timer (without "bells and whistles") is suitable for this. The only fundamental requirement is that it must be capable of generating periodic interrupts at equal intervals—for example, an overflow interrupt. It is also desirable to have the ability to control the overflow period to select a suitable system tick frequency.
+The system timer functionality is implemented in the kernel function `system_timer()`. The code for this function is shown in "Listing 5. System Timer".
+
+[^25]: The simplest timer (without advanced features) is suitable for this purpose. The only fundamental requirement is that it must be capable of generating periodic interrupts at equal intervals—for example, an overflow interrupt. It is also desirable to have the ability to control the overflow period in order to select an appropriate system tick frequency.
 
 ```cpp
-01    void OS::TKernel::system_timer()
-02    {
-03        SYS_TIMER_CRIT_SECT();
-04    #if scmRTOS_SYSTEM_TICKS_ENABLE == 1
-05        SysTickCount++;
-06    #endif
-07    
-08    #if scmRTOS_PRIORITY_ORDER == 0
-09        const uint_fast8_t BaseIndex = 0;
-10    #else
-11        const uint_fast8_t BaseIndex = 1;
-12    #endif
-13    
-14        for(uint_fast8_t i = BaseIndex; i < (PROCESS_COUNT-1 + BaseIndex); i++)
-15        {
-16            TBaseProcess *p = ProcessTable[i];
-17    
-18            if(p->Timeout > 0)
-19            {
-20                if(--p->Timeout == 0)
-21                {
-22                    set_process_ready(p->Priority);
-23                }
-24            }
-25        }
-26    }
+01 void OS::TKernel::system_timer()
+02 {
+03     SYS_TIMER_CRIT_SECT();
+04 #if scmRTOS_SYSTEM_TICKS_ENABLE == 1
+05     SysTickCount++;
+06 #endif
+07
+08 #if scmRTOS_PRIORITY_ORDER == 0
+09     const uint_fast8_t BaseIndex = 0;
+10 #else
+11     const uint_fast8_t BaseIndex = 1;
+12 #endif
+13
+14     for(uint_fast8_t i = BaseIndex; i < (PROCESS_COUNT-1 + BaseIndex); i++)
+15     {
+16         TBaseProcess *p = ProcessTable[i];
+17
+18         if(p->Timeout > 0)
+19         {
+20             if(--p->Timeout == 0)
+21             {
+22                 set_process_ready(p->Priority);
+23             }
+24         }
+25     }
+26 }
 ```
-/// Caption
-Listing 5. System Timer
+
+/// Caption  
+Listing 5. System Timer  
 ///
 
-As can be seen from the source code, the actions are very simple:
+As can be seen from the source code, the actions are very straightforward:
 
-  1. If the tick counter is enabled, the counter variable is incremented (5).
-  2. Then, in a loop, the timeout values of all registered processes are checked. If the value of the variable being checked is not equal to 0[^26], it is decremented and checked for 0. If it equals 0 (after decrementing)—i.e., the timeout for this process has expired—the process is moved to the ready state.
+1. If the tick counter is enabled, the tick counter variable is incremented (line 5);
+2. Then, in a loop, the timeout values of all registered processes are checked. If the checked value is not zero[^26], it is decremented and tested for zero. When it reaches zero (after decrement), meaning the process timeout has expired, the process is marked as ready to run.
 
-[^26]: This means the process is waiting with a timeout.
+[^26]: This indicates that the process is waiting with a timeout.
 
-Since this function is called inside the timer interrupt handler, upon returning to the main program (as described above), control will be transferred to the highest-priority process ready for execution. That is, if the timeout of some process (with higher priority than the interrupted one) expires, it will gain control upon exiting the interrupt. This is implemented using the scheduler (see above)[^27].
+Since this function is called inside the timer interrupt handler, upon returning to the main program (as described earlier), control will be transferred to the highest-priority ready process. Thus, if the timeout of a process with higher priority than the interrupted one has expired, that process will receive control after exiting the interrupt. This is achieved through the scheduler (see above)[^27].
 
-[^27]: Given the ability to set the priority of the system timer interrupt.
+[^27]: Provided it is possible to set the priority of the system timer interrupt.
 
 !!! info "**NOTE**"
+    Some RTOSes provide recommendations for the system tick duration, most commonly suggesting a range of 10[^28]–100 ms. This may be appropriate for those systems. The trade-off here is between minimizing overhead from system timer interrupts and achieving finer time resolution.
+    
+    Given that **scmRTOS** targets small microcontrollers operating in real-time environments, and considering that execution overhead[^29] is very low, the recommended system tick period is 1–10 ms.
+    
+    An analogy can be drawn with other domains where smaller objects typically operate at higher frequencies: for example, a mouse's heartbeat is much faster than a human's, and a human's is faster than an elephant's, with agility being inversely related. A similar trend exists in engineering, so it is reasonable to expect shorter tick periods on smaller processors than on larger ones—in larger systems, overhead is generally higher due to greater loading of the more powerful processor and, consequently, reduced responsiveness.
 
-    Some operating systems provide recommendations for setting the system tick duration. Most often, a range of 10[^28] to 100 ms is mentioned. Perhaps for those operating systems, this is correct. The balance here is determined by the desire to achieve the lowest overhead from system timer interrupts and the desire to obtain finer time resolution.
-
-    Given **scmRTOS**'s orientation towards small MCUs operating in real-time, and taking into account the fact that the (execution time) overhead[^29] is small, the recommended system tick value is **1 to 10 ms**.
-
-    An analogy can be drawn with other domains where smaller objects are usually higher-frequency: for example, a mouse's heartbeat is much faster than a human's, and a human's is faster than an elephant's. At the same time, "agility" is inversely related. A similar trend exists in technology; therefore, it is reasonable to expect that for small processors, the system tick period is smaller than for large ones—in larger systems, overhead is generally greater due to the typically higher load on more powerful processors and, consequently, their lower "agility".
-
-[^28]: How, for example, can dynamic indication be organized with such a digit switching period when it is known that for comfortable operation, the switching period (for four digits) should be no more than 5 ms?
+[^28]: For example, how would one implement dynamic LED display multiplexing with such a period when it is known that, for comfortable viewing with four digits, the digit refresh period must not exceed 5 ms?
 
 [^29]: Due to the small number of processes and the simple, fast scheduler.
 
@@ -410,58 +410,58 @@ Since this function is called inside the timer interrupt handler, upon returning
 
 ### Kernel Agent
 
-The `TKernelAgent` class is a special facility designed to provide access to kernel resources when building extensions to enhance the operating system's functionality.
+The `TKernelAgent` class is a specialized mechanism designed to provide controlled access to kernel resources when developing extensions to the operating system's functionality.
 
-The general idea is as follows. Creating various functional extensions for the OS requires access to certain kernel resources—in particular, to the kernel variable containing the priority of the active process or to the system's process map. Providing direct access to this part of the internal representation would not be very wise—it would violate the security model of the object-oriented approach[^30]. This leads to negative consequences, such as program inoperability in the absence of proper coding discipline and/or loss of compatibility in case of changes to the kernel's internal representation.
+The overall concept is as follows: creating any functional extension for the OS requires access to certain kernel resources—such as the variable holding the priority of the active process or the system process map. Granting direct access to these internal structures would be unwise, as it violates the security model of object-oriented design[^30] (specifically, the principles of encapsulation and abstraction). This could lead to negative consequences, such as program instability due to insufficient coding discipline or loss of compatibility if the internal kernel representation changes.
 
-Therefore, to solve the problem of accessing kernel resources, an approach based on a specially created class—the kernel agent—has been proposed. This class restricts access through its documented interface. All this allows for the creation of extensions in a formalized way, making the process simpler and safer.
+To address this, an approach based on a dedicated class—the **kernel agent**—is proposed. It restricts access through a documented interface, allowing extensions to be created in a formalized, simpler, and safer manner.
 
-[^30]: The principles of encapsulation and abstraction.
+[^30]: Principles of encapsulation and abstraction.
 
-The code for the kernel agent class can be found in "Listing 6. TKernelAgent".
+The code for the kernel agent class is shown in "Listing 6. TKernelAgent".
 
 ```cpp
-01    class TKernelAgent
-02    {
-03        INLINE static TBaseProcess * cur_proc() { return Kernel.ProcessTable[cur_proc_priority()]; }
+01 class TKernelAgent
+02 {
+03     INLINE static TBaseProcess * cur_proc() { return Kernel.ProcessTable[cur_proc_priority()]; }
 04
-05    protected:
-06        TKernelAgent() { }
-07        INLINE static uint_fast8_t const   & cur_proc_priority()       { return Kernel.CurProcPriority;  }
-08        INLINE static volatile TProcessMap & ready_process_map()       { return Kernel.ReadyProcessMap;  }
-09        INLINE static volatile timeout_t   & cur_proc_timeout()        { return cur_proc()->Timeout;     }
-10        INLINE static void reschedule()                                { Kernel.scheduler();             }
+05 protected:
+06     TKernelAgent() { }
+07     INLINE static uint_fast8_t const & cur_proc_priority() { return Kernel.CurProcPriority; }
+08     INLINE static volatile TProcessMap & ready_process_map() { return Kernel.ReadyProcessMap; }
+09     INLINE static volatile timeout_t & cur_proc_timeout() { return cur_proc()->Timeout; }
+10     INLINE static void reschedule() { Kernel.scheduler(); }
 11
-12        INLINE static void set_process_ready   (const uint_fast8_t pr) { Kernel.set_process_ready(pr);   }
-13         INLINE static void set_process_unready (const uint_fast8_t pr) { Kernel.set_process_unready(pr); }
-14 
-15     #if scmRTOS_DEBUG_ENABLE == 1
-16         INLINE static TService * volatile & cur_proc_waiting_for()     { return cur_proc()->WaitingFor;  }
-17     #endif
-18 
-19     #if scmRTOS_PROCESS_RESTART_ENABLE == 1
-20         INLINE static volatile 
-21         TProcessMap * & cur_proc_waiting_map()  { return cur_proc()->WaitingProcessMap; }
-22     #endif
-23     };                                                                                         
-```                                
-/// Caption
-Listing 6. TKernelAgent
+12     INLINE static void set_process_ready (const uint_fast8_t pr) { Kernel.set_process_ready(pr); }
+13     INLINE static void set_process_unready (const uint_fast8_t pr) { Kernel.set_process_unready(pr); }
+14
+15 #if scmRTOS_DEBUG_ENABLE == 1
+16     INLINE static TService * volatile & cur_proc_waiting_for() { return cur_proc()->WaitingFor; }
+17 #endif
+18
+19 #if scmRTOS_PROCESS_RESTART_ENABLE == 1
+20     INLINE static volatile
+21     TProcessMap * & cur_proc_waiting_map() { return cur_proc()->WaitingProcessMap; }
+22 #endif
+23 };
+```
+
+/// Caption  
+Listing 6. TKernelAgent  
 ///
 
-As can be seen from the code, the class is defined in such a way that it is impossible to create objects of this class. This is done deliberately because, by design, `TKernelAgent` serves as a base for creating extensions: its main function is to provide a documented interface to kernel resources. Therefore, all use of this code becomes possible only in descendants of this class, which are the actual extensions.
+As can be seen from the code, the class is defined in such a way that instances of it cannot be created. This is intentional: `TKernelAgent` is designed to serve as a base for building extensions. Its primary role is to provide a documented interface to kernel resources. Therefore, its functionality becomes available only through derived classes, which represent the actual extensions.
 
-An example of using `TKernelAgent` will be examined in more detail later when describing the base class for creating interprocess communication services, `TService`.
+An example of using `TKernelAgent` will be discussed in more detail below when describing the base class for interprocess communication services—`TService`.
 
-The entire class interface consists of inline functions, which in most cases allows implementing the necessary extensions without loss of efficiency compared to the scenario where access to kernel resources is performed directly.
+The entire interface consists of inline functions, which in most cases allows extensions to be implemented without sacrificing performance compared to direct access to kernel resources.
 
 ### Extensions
 
-The aforementioned kernel agent class enables the creation of additional facilities that extend the functional capabilities of the OS. The methodology for creating such facilities is simple—just declare a class that inherits from `TKernelAgent` and define its contents. Such classes are called operating system extensions.
+The kernel agent class described above enables the creation of additional features that extend the OS capabilities. The methodology for creating such extensions is straightforward: simply declare a class derived from `TKernelAgent` and define its contents. Such classes are referred to as **operating system extensions**.
 
-The placement of the OS kernel code is such that the definitions of classes and a number of member function definitions are separated in the header file `os_kernel.h`. This makes it possible to write a user class that has access to all definitions of OS kernel types, while at the same time, the definitions of this user class become available in the member functions of the kernel classes—for example, in the scheduler and in the system timer function[^31].
+The layout of the OS kernel code is organized so that class declarations and definitions of certain class member functions are separated into the header file `os_kernel.h`. This allows a user-defined class to have access to all kernel type definitions while simultaneously making the user-defined class visible to member functions of kernel classes—for example, in the scheduler and the system timer function[^31].
 
 [^31]: In user hooks.
 
-Extensions are connected using the configuration file `scmRTOS_extensions.h`, which is included in `os_kernel.h` between the definitions of kernel types and their member functions. This allows the definition of an extension class to be physically placed in a separate user header file and included in the project by including this file in `scmRTOS_extensions.h`. After this, the extension is ready for use according to its intended purpose.
-
+Extensions are integrated using the configuration file `scmRTOS_extensions.h`, which is included in `os_kernel.h` between the kernel type definitions and their member function implementations. This makes it possible to place the extension class definition in a separate user header file and include it in the project by adding it to `scmRTOS_extensions.h`. Once done, the extension is ready for use according to its intended purpose.
