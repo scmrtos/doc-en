@@ -182,7 +182,7 @@ Slon slon;
 
 where `n` is the priority number.
 
-["Listing 1. Process Executable Function"]([overview.md](http://overview.md)#process-exec) illustrates a typical example of a process function.
+["Overview Listing 1. Process Executable Function"](overview.md#process-exec) illustrates a typical example of a process function.
 
 Using a process primarily involves writing user code inside the process function. As previously mentioned, a few simple rules must be followed:
 
