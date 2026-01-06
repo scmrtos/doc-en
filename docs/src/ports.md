@@ -1,244 +1,232 @@
-# Порты
+# Ports
 
-## Общие замечания
+## General Notes
 
-Ввиду больших отличий как аппаратных архитектур, так и средств разработки под них, возникает необходимость в специальной адаптации кода ОС[^1] под них. Результатом этой работы является платформеннозависимая часть, которая в совокупности с общей частью и составляет порт под ту или иную платформу. Процесс подготовки платформеннозависимой части называется портированием.
+Due to significant differences in both hardware architectures and the development tools targeting them, adaptation of the OS code[^1] to specific platforms is required. The result of this effort is the platform-specific portion, which, together with the common core, constitutes the complete port for a given platform. The process of preparing the platform-specific portion is referred to as porting.
 
-[^1]: Это касается не только ОС, но и других кроссплатформенных программ.
+[^1]: This applies not only to the OS but also to other cross-platform software.
 
-В настоящей главе будут рассмотрены, главным образом, платформеннозависимые части, их содержимое и особенности,  также дана краткая инструкция по портированию ОС, т.е. что нужно сделать, чтобы создать порт.
+This chapter primarily examines the platform-specific components, their contents and characteristics, and provides brief instructions for porting the OS—i.e., the steps required to create a new port.
 
-Платформеннозависимая часть каждой целевой платформы содержится в отдельной директории и минимально содержит три файла:
+The platform-specific code for each target platform is contained in a separate directory and minimally includes three files:
 
-  * os_target.h – платформеннозависимые объявления и макросы.
-  * os_target_asm.ext[^2] – низкоуровневый код, функции переключения контекста, старта ОС.
-  * os_target.cpp – определения функции инициализации стекового кадра процесса и функции обработчика прерывания от таймера, используемого в качестве системного.
+* `os_target.h` – platform-specific declarations and macros.
+* `os_target_asm.ext`[^2] – low-level code, including context switch functions and OS startup routines.
+* `os_target.cpp` – definitions of the process stack frame initialization function and the interrupt handler for the timer used as the system timer.
 
-[^2]: Расширение ассемблерного файла для целевого процессора.
+[^2]: The file extension for assembly source code specific to the target processor.
 
-Настройка кода ОС на целевую платформу осуществляется путём:
+Configuration of the OS code for a target platform is achieved through:
 
-  * определения специальных макросов препроцессора;
-  * директивами условной трансляции;
-  * определением типов, определяемых пользователем, реализация которых зависит от целевой платформы;
-  * заданием псевдонимов некоторых типов;
-  * определением функций, код которых вынесен на уровень порта.
+* definition of special preprocessor macros;
+* conditional compilation directives;
+* definition of user-defined types whose implementation depends on the target platform;
+* type aliases for certain types;
+* definition of functions whose implementation is delegated to the port level.
 
-Важной и "тонкой" частью кода порта является определение ассемблерных подпрограмм, осуществляющих старт системы, сохранение контекста прерываемого процесса, переключение указателей стека и восстановление контекста процесса, получившего управление, в том числе и обработчик программного прерывания, в теле которого производится переключение контекстов процессов. Чтобы реализовать этот код, от разработчика порта требуются глубокие знания целевой аппаратной архитектуры на низком уровне, а также умение использовать программный пакет (компилятор, ассемблер, линкер) для работы со "смешанными"[^3] проектами. 
+A critical and delicate part of the port code involves the implementation of assembly-language subroutines responsible for system startup, saving the context of the interrupted process, switching stack pointers, and restoring the context of the process gaining control—including the software interrupt handler that performs context switching. Implementing this code requires the port developer to have in-depth knowledge of the target hardware architecture at a low level, as well as proficiency in using the toolchain (compiler, assembler, linker) for mixed-language[^3] projects.
 
-[^3]: Т.е. содержащими исходные файлы на разных языках программирования – в нашем случае С++ и ассемблер целевой аппаратной платформы.
+[^3]: That is, projects containing source files in different programming languages—in this case, C++ and the assembly language of the target hardware platform.
 
-Процесс портирования сводится, главным образом, к определению объектов портирования и написанию платформеннозависимого кода.
+The porting process primarily consists of identifying the required porting objects and implementing the platform-specific code.
 
-## Объекты портирования
+## Porting Objects
 
-### Макросы
+### Macros
 
-Существует ряд платформеннозависимых макросов, которые должны быть определены. Если значение макроса в том или ином порте не требуется, то макрос должен быть определён пустым. Перечень макросов и их описания приведены ниже.
+A number of platform-specific macros must be defined. If a macro is not required for a particular port, it should be defined as empty. The list of macros and their descriptions is provided below.
 
 ----
-
 ```cpp
 INLINE
 ```
-Задаёт поведение функций при встраивании. Обычно состоит из платформеннозависимой директивы безусловного встраивания и ключевого слова `inline`.
+
+Specifies the inlining behavior for functions. Typically consists of a platform-specific unconditional inlining directive combined with the `inline` keyword.
 
 ----
-
 OS_PROCESS
 
-Квалифицирует исполняемую функцию процесса. Содержит платформеннозависимый атрибут, указывающий компилятору, что функция не имеет возврата, поэтому preserved[^4] регистры процессора можно использовать без сохранения. Это экономит код и пространство в стеке.
+Qualifies the executable function of a process. Contains a platform-specific attribute that informs the compiler that the function does not return, allowing preserved[^4] registers to be used without saving them. This reduces code size and stack usage.
 
-[^4]: Те, значение которых перед использованием должно быть сохранено, а после использования восстановлено, чтобы вызывающая функция не получила искажения контекста при вызове другой функции.
+[^4]: Registers whose values must be saved before use and restored afterward to prevent corruption of the calling function's context when invoking another function.
 
 ----
-
 ```cpp
 OS_INTERRUPT
 ```
 
-Содержит платформеннозависимое расширение, используемое для квалификации обработчиков прерываний на целевой платформе.
+Contains a platform-specific extension used to qualify interrupt handlers on the target platform.
 
 ----
-
 ```cpp
 DUMMY_INSTR()
 ```
 
-Макрос, определяющий пустую инструкцию целевого процессора (как правило, это инструкция `NOP`). Используется в цикле ожидания переключения контекстов в планировщике (в варианте с программным прерыванием переключения контекстов).
+A macro defining a no-operation instruction for the target processor (typically `NOP`). Used in the context-switch waiting loop of the scheduler (in the software-interrupt-based context switch variant).
 
 ----
-
 ```cpp
 INLINE_PROCESS_CTOR
 ```
 
-Определяет поведение встраивания конструкторов процессов. Если нужно встраивание, то значение этого макроса должно `INLINE`, если  встраивание не нужно, то значение макроса должно быть оставлено пустым.
+Controls inlining of process constructors. If inlining is desired, this macro should be defined as `INLINE`; otherwise, it should be left empty.
 
 ----
-
 ```cpp
 SYS_TIMER_CRIT_SECT()
 ```
 
-Используется в обработчике прерываний системного таймера и задаёт, будет ли использоваться в нём критическая секция, которая актуальна в случае, если целевой процессор имеет приоритетный многоуровневый контроллер прерываний, что может привести к тому, что обработчик прерываний от системного таймера может быть прерван в непредсказуемый момент другим, более высокоуровневым, обработчиком прерываний, который может производить доступ к тем же ресурсам ОС, что и обработчик прерываний от системного таймера.
+Used in the system timer interrupt handler to determine whether a critical section is required. This is relevant when the target processor has a prioritized multi-level interrupt controller, where the system timer handler could be unpredictably interrupted by a higher-priority handler accessing the same OS resources.
 
 ----
-
 ```cpp
 CONTEXT_SWITCH_HOOK_CRIT_SECT
 ```
 
-Определяет, будет хук переключателя контекстов выполняться в критической секции или нет. Очень важно, чтобы хук переключателя контекстов выполнялся целостно по отношению к манипуляциям с переменными ядра (`SchedProcPriority`, в частности), а это означает, что во время выполнения хука не должен вызываться планировщик. Вызов планировщика может произойти из обработчика прерываний в случае, если процессор имеет аппаратный приоритетный контроллер прерываний и программное прерывание переключения контекстов имеет более низкий приоритет по сравнению с другими прерываниями. В этом случае код хука переключателя контекстов должен выполняться в критической секции и значение макроса должно быть `TCritSect cs`. Это очень важный момент, если его не соблюсти, то в процессе работы системы будут возникать трудноуловимые ошибки, поэтому при портировании тут нужно проявить внимательность и аккуратность.
+Determines whether the context switch hook executes within a critical section. It is essential that the hook executes atomically with respect to kernel variable manipulation (particularly `SchedProcPriority`), meaning the scheduler must not be invoked during hook execution. Scheduler invocation can occur from interrupts if the processor has a hardware prioritized interrupt controller and the software context-switch interrupt has lower priority than others. In such cases, the hook code must run in a critical section, and the macro should be defined as `TCritSect cs`. This is a critical consideration&nbsp;—&nbsp;failure to address it properly can lead to elusive runtime errors, requiring careful attention during porting.
 
 ----
-
 ```cpp
 SEPARATE_RETURN_STACK
 ```
 
-Для платформ, имеющих отдельный стек возвратов, значение этого макроса должно быть равно 1. Для остальных платформ&nbsp;– 0.
+For platforms with a separate return stack, this macro should be defined as 1. For all other platforms, it should be 0.
 
 ----
-
-### Типы
+### Types
 
 ```cpp
 stack_item_t
 ```
-Псевдоним встроенного типа, задаёт тип элемента стека целевого процессора.
+
+Type alias for the built-in type representing a stack element on the target processor.
 
 ----
-
 ```cpp
 status_reg_t
 ```
-Псевдоним встроенного типа, соответствующий разрядности статусного регистра целевого процессора.
+
+Type alias for the built-in type matching the bit width of the target processor's status register.
 
 ----
-
 ```cpp
 TCritSect
 ```
-Класс-"обёртка" для организации критической секции.
+
+Wrapper class for implementing critical sections.
 
 ----
-
 ```cpp
 TPrioMaskTable
 ```
 
-Класс, содержащий таблицу масок (тегов) приоритетов. Служит для повышения эффективности работы системы. Может отсутствовать на некоторых платформах, на таких, где есть аппаратные средства для вычисления тегов по значению приоритета,&nbsp;– например, аппаратный shifter.
+Class containing a priority mask (tag) table. Used to improve system efficiency. May be omitted on platforms with hardware support for priority tag computation (e.g., a hardware shifter).
 
 ----
-
 ```cpp
 TISRW
 ```
-Класс-"обёртка" для обработчиков прерываний, в которых используются сервисы ОС.
 
-### Функции
+Wrapper class for interrupt handlers that utilize OS services.
+
+### Functions
 
 ```cpp
 get_prio_tag()
 ```
-Преобразует номер приоритета в соответствующий тег. Функционально это сдвиг единицы в двоичном слове на количество позиций, равное номеру приоритета.
+
+Converts a priority number to its corresponding tag. Functionally equivalent to shifting a 1 left by the priority value.
 
 ----
-
 ```cpp
 highest_priority()
 ```
-Возвращает номер приоритета, соответствующего тегу наиболее приоритетного процесса в карте процессов, переданной функции в качестве аргумента.
+
+Returns the priority number corresponding to the highest-priority process tag in the process map passed as an argument.
 
 ----
-
 ```cpp
 disable_context_switch()
 ```
-Запрещает переключение контекстов. В настоящее время реализуется путём запрещения прерываний.
+
+Disables context switching. Currently implemented by disabling interrupts.
 
 ----
-
 ```cpp
 enable_context_switch()
 ```
-Разрешает переключение контекстов. В настоящее время реализуется через разрешение прерываний.
+
+Enables context switching. Currently implemented by enabling interrupts.
 
 ----
-
 ```cpp
 os_start()
 ```
-Производит старт операционной системы. Сама функция реализована на ассемблере. Получает в качестве аргумента указатель стека самого приоритетного процесса и осуществляет передачу ему управления путём восстановления  контекста из его стека.
+
+Starts the operating system. Implemented in assembly. Receives a pointer to the stack of the highest-priority process and transfers control by restoring its context.
 
 ----
-
 ```cpp
 os_context_switcher()
 ```
-Функция, реализованная на ассемблере, производит переключение контекстов процессов в варианте с прямой передачей управления.
+
+Assembly function that performs direct context switching between processes.
 
 ----
-
 ```cpp
 context_switcher_isr()
 ```
-Обработчик прерываний переключения контекстов. Реализуется на ассемблере. Производит сохранение контекста прерываемого процесса, переключение указателей стеков процессов путём вызова `context_switch_hook()`[^5] и восстановление контекста активируемого процесса.
 
-[^5]: Через функцию-"обёртку"" `os_context_switch_hook()`, имеющую спецификацию связывания `"extern C"`.
+Interrupt handler for context switching. Implemented in assembly. Saves the context of the interrupted process, switches stack pointers via a call to `context_switch_hook()`[^5], and restores the context of the activated process.
+
+[^5]: Through the wrapper function `os_context_switch_hook()`, which has `"extern C"` linkage.
 
 ----
-
 ```cpp
 TBaseProcess::init_stack_frame()
 ```
-Функция подготовки стекового кадра, которая формирует значения ячеек памяти в стеке таким образом, чтобы состояние стека было таким, как будто процесс, которому принадлежит стек, прерван и контекст процесса сохранён в стеке. Функция используется конструктором процесса и при рестарте процесса.
+
+Initializes the stack frame of a process, arranging memory cells such that the stack appears as if the process was interrupted and its context saved. Used by the process constructor and during process restart.
 
 ----
-
 ```cpp
 system_timer_isr()
 ```
 
-Обработчик прерываний системного таймера. Вызывает функцию `TKernel::system_timer()`.
+System timer interrupt handler. Calls `TKernel::system_timer()`.
 
-## Портирование
+## Porting Guidelines
 
-Для портирования, как правило, достаточно определить для целевой платформы все вышеперечисленные макросы, типы и функции.
+Porting typically requires defining all the macros, types, and functions listed above for the target platform.
 
-Наиболее "тонкая" и ответственная работа при портировании выпадает на реализацию ассемблерного кода и на функцию подготовки стекового кадра. Ряд моментов, на которые следует обратить особое внимание:
+The most delicate and critical tasks involve implementing the assembly code and the stack frame initialization function. Key aspects requiring particular attention include:
 
-  * выяснить, какие используются соглашения о вызове функций у используемого компилятора, чтобы знать, какие регистры (или область стека) используются для передачи аргументов тех или иных типов;
-  * определить особенности работы процессора в части сохранения адресов возвратов и статусных регистров при возникновении прерывания&nbsp;– это необходимо для понимания, как формируется стековый кадр на целевой аппаратной платформе, что, в свою очередь, важно для реализации функции (и обработчика прерываний) переключения контекстов, и функции формирования стекового кадра;
-  * проверить схему кодирования экспортируемых/импортируемых имён ассемблера. В простейшем случае имена объектов и функций на С (и `"extern C"`[^6] на С++) на ассемблере видны без изменений, но на некоторых платформах[^7] к самому имени могут добавляться префиксы и/или суффиксы, что потребует ассемблерные функции именовать в соответствии с этой схемой, иначе линкер не сможет правильно выполнить связи.
+* determining the calling conventions used by the compiler to identify which registers (or stack areas) are used for passing arguments of various types;
+* understanding how the processor handles saving of return addresses and status registers upon interrupt occurrence—this is essential for correct stack frame formation on the target platform, which in turn is necessary for implementing context switch functions/handlers and stack frame initialization;
+* verifying the name mangling scheme for exported/imported symbols in assembly. In the simplest case, C names (and `"extern C"` names in C++) are visible unchanged in assembly, but on some platforms[^7] prefixes and/or suffixes may be added, requiring assembly functions to be named accordingly for correct linker resolution.
 
-[^6]: Имена в С++ подвергаются специальному кодированию в целях поддержки перегрузки имён функций, а также для типобезопасного связывания, по какой причине получить к ним доступ на ассемблере задача трудновыполнимая. Поэтому имена функций, описанных в файлах, которые компилируются С++ компилятором и к которым необходим доступ из ассемблерного кода, должны быть объявлены в исходных файлах как `"extern C"`.
+[^7]: Notably on Blackfin.
 
-[^7]: В частности, на Blackfin.
+[^6]: C++ names undergo special mangling to support function overloading and type-safe linking, making direct assembly access difficult. Therefore, functions defined in C++-compiled files that need to be accessed from assembly must be declared with `"extern C"` linkage.
 
-Весь ассемблерный код должен быть помещён в файл os_target_asm.ext, упомянутый выше. Определения макросов и типов, а также встраиваемых функций&nbsp;– в файл os_target.h. В файле os_target.cpp объявляются объекты типов, если необходимо,&nbsp;– например, `OS::TPrioMaskTable OS::PrioMaskTable`, а также определяются функция `TBaseProcess::init_stack_frame()` и обработчик прерывания системного таймера `system_timer_isr()`.
+All assembly code should be placed in the file `os_target_asm.ext` mentioned earlier. Macro and type definitions, along with inline functions, belong in `os_target.h`. The file `os_target.cpp` should declare type objects if needed (e.g., `OS::TPrioMaskTable OS::PrioMaskTable`) and define `TBaseProcess::init_stack_frame()` and the system timer interrupt handler `system_timer_isr()`.
 
-Вышеописанное является лишь общими сведениями, относящимися к порту ОС, при портировании возникает достаточно много нюансов, описание которых является весьма частным и выходит за рамки настоящего документа.
+The above provides only general information related to OS ports. Porting involves numerous specific nuances whose detailed description is beyond the scope of this document.
 
-!!! tip "**СОВЕТ**"
- 
-    При создании нового порта имеет смысл взять за основу или в качестве примера один из существующих&nbsp;– это значительно облегчает процесс портирования. Какой именно выбрать из имеющихся портов, зависит от близости аппаратной и программной частей платформы, на которую осуществляется портирование.
+!!! tip "**TIP**"
+    When creating a new port, it is advisable to use an existing port as a template or reference—this significantly simplifies the process. The choice of reference port depends on the architectural and toolchain similarity between the existing port and the target platform.
 
+## Integration into a Working Project
 
-## Запуск в составе рабочего проекта
+To enhance flexibility and efficiency, certain platform-specific code that depends on project-specific details and the particular microcontroller used is delegated to the project level. This typically includes selection of the hardware timer used as the system timer and, where applicable, the context-switch interrupt when the processor lacks a dedicated software interrupt.
 
-Для повышения гибкости и эффективности использования часть платформеннозависимого кода, зависящая от частных особенностей того или иного проекта и конкретно используемого микроконтроллера, вынесена на уровень проекта. Сюда, как правило, относится выбор аппаратного таймера процессора, используемого в качестве системного, а также выбор прерывания переключения контекстов, если процессор не имеет специализированного программного прерывания.
+For port configuration, the project must include the following files:
 
-Для конфигурирования порта проект должен содержать файлы:
+* `scmRTOS_config.h`;
+* `scmRTOS_target_cfg.h`;
 
-  * scmRTOS_config.h;
-  * scmRTOS_target_cfg.h;
+The file `scmRTOS_config.h` contains most configuration macros defining parameters such as the number of processes, context switch method, enabling of system time functions, user hook support, priority value ordering, and similar settings.
 
-scmRTOS_config.h содержит большинство конфигурационных макросов, задающих такие параметры, как количество процессов в программе, способ передачи управления, включение функции системного времени, разрешение использования пользовательских хуков, порядок нумерации значений приоритетов и т.д.
+The file `scmRTOS_target_cfg.h` contains code for managing target processor resources selected for system functions—primarily the system timer and context-switch interrupt.
 
-В scmRTOS_target_cfg.h размещён код управления ресурсами целевого процессора, выбранными для реализации системных функций – всё тот же системный таймер, прерывание переключения контекстов.
-
-Содержимое обоих конфигурационных файлов подробно описано в документах, посвящённых конкретным портам.
-
-
+The contents of both configuration files are described in detail in documents specific to individual ports.
