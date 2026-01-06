@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="shortcut icon" href="img/favicon.ico" />
-    <title>Instead of a preface - scmRTOS</title>
+    <title>Not a Preface - scmRTOS</title>
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,7 +13,7 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Instead of a preface";
+        var mkdocs_page_name = "Not a Preface";
         var mkdocs_page_input_path = "index.md";
         var mkdocs_page_url = null;
       </script>
@@ -46,9 +46,9 @@
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption"><span class="caption-text">Intro</span></p>
               <ul class="current">
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Instead of a preface</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Not a Preface</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#why">Why?</a>
+    <li class="toctree-l2"><a class="reference internal" href="#purpose">Purpose</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#supported-platforms">Supported Platforms</a>
     </li>
@@ -74,6 +74,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="src/profiler/">Process Performance Profiling</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="src/example-job-queue/">Example: Job Queue</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="src/glossary/">Glossary</a>
                   </li>
               </ul>
@@ -92,7 +94,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Intro</li>
-      <li class="breadcrumb-item active">Instead of a preface</li>
+      <li class="breadcrumb-item active">Not a Preface</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -102,19 +104,19 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="scmrtos">scmRTOS<a class="headerlink" href="#scmrtos" title="Permanent link">🔗</a></h1>
-<p>The abbreviation <strong>scmRTOS</strong> stands for <strong>Single-Chip Microcontroller Real Time Operating System</strong>.</p>
-<p>As the name implies, scmRTOS is designed for single-chip microcontrollers (MCUs), although nothing prevents it from being used with processors like Blackfin or Cortex-A.</p>
-<h3 id="why">Why?<a class="headerlink" href="#why" title="Permanent link">🔗</a></h3>
-<p>One of the primary goals behind creating this RTOS was the desire to obtain the simplest, most minimalist, fast, and efficient solution for implementing preemptive multitasking when using single-chip MCUs. Their resources are limited and typically cannot be expanded. Although technological advancements since the emergence of scmRTOS have significantly reduced the demands on RTOS efficiency, simplicity, speed, and small size remain desirable factors in many cases.</p>
-<p>The second main reason for scmRTOS's development is its use and implementation in the C++ programming language. C++ has become quite complex today, but scmRTOS employs only the most basic concepts and constructs of the language — essentially what was included in the C++98 standard: classes, templates, inheritance, function overloading.</p>
-<p>C++ in the embedded field is often seen as a deterrent — there's a certain mythology surrounding this language (high overhead, poor controllability, etc.). However, in practice, using C++ can simplify, rather than complicate, software development and maintenance (though the opposite effect is possible with the wrong choice of tools for the task).</p>
-<p>scmRTOS focuses on ease of use, greatly aided by the concept of a class, which encapsulates properties and provides the user only with an interface. This approach reduces the risk of incorrect usage of operating system objects.</p>
+<p>The abbreviation <strong>scmRTOS</strong> stands for <strong>Single-Chip Microcontroller Real-Time Operating System</strong>.</p>
+<p>As indicated by the name, <strong>scmRTOS</strong> is targeted at single-chip microcontrollers (MCUs), although it can also be used with processors such as Blackfin or Cortex-A.</p>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">🔗</a></h3>
+<p>One of the primary objectives in developing this RTOS was to provide the simplest, most minimal, fastest, and most resource-efficient implementation of preemptive multitasking for single-chip MCUs with limited resources that generally cannot be expanded. Although advancements in technology since the introduction of <strong>scmRTOS</strong> have reduced the emphasis on RTOS efficiency, simplicity, speed, and compact size continue to be advantageous in many applications.</p>
+<p>A second key motivation for <strong>scmRTOS</strong> is its implementation in the C++ programming language. While contemporary C++ has increased in complexity, <strong>scmRTOS</strong> employs only the fundamental concepts and constructs from the C++98 standard: classes, templates, inheritance, and function name overloading.</p>
+<p>In embedded systems development, C++ is sometimes viewed unfavorably due to misconceptions regarding overhead and controllability. In practice, appropriate use of C++ can simplify software development and maintenance, although inappropriate application may produce the opposite result.</p>
+<p><strong>scmRTOS</strong> prioritizes ease of use. This is facilitated by object-oriented design, where classes encapsulate internal details and expose only a well-defined interface, thereby minimizing the risk of incorrect usage of operating system components.</p>
 <div class="admonition tip">
-<p class="admonition-title">TIP</p>
-<p>The history of <strong>scmRTOS</strong> and some "philosophical" remarks on the topic of real-time operating systems are provided in the document <a href="https://github.com/scmrtos/scmrtos-doc/blob/master/pdf/scmRTOS.ru.pdf">scmRTOS.ru.pdf</a>.</p>
+<p class="admonition-title"><strong>TIP</strong></p>
+<p>The history of <strong>scmRTOS</strong> and certain "philosophical" considerations regarding real-time operating systems are detailed in the <a href="https://github.com/scmrtos/scmrtos-doc/blob/master/pdf/scmRTOS.en.pdf">PDF document</a>.</p>
 </div>
 <h3 id="supported-platforms">Supported Platforms<a class="headerlink" href="#supported-platforms" title="Permanent link">🔗</a></h3>
-<p>Currently, scmRTOS supports the following platforms (processor/toolchain):</p>
+<p><strong>scmRTOS</strong> currently supports the following platforms (processor/toolchain):</p>
 <ul>
 <li>MSP430/IAR Systems;</li>
 <li>MSP430/GCC;</li>

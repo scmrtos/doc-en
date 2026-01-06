@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Example: Job Queue - scmRTOS</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Example: Job Queue";
+        var mkdocs_page_input_path = "src/example-job-queue.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+ <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> scmRTOS
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Intro</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../..">Not a Preface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">RTOS Components</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../kernel/">Kernel</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipcs/">Interprocess Communications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ports/">Ports</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendix</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">Debug</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Performance Profiling</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Example: Job Queue</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#problem-statement">Problem Statement</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#mutual-exclusion-semaphores-mutexes-and-the-problem-of-blocking-high-priority-processes">Mutual-Exclusion Semaphores (Mutexes) and the Problem of Blocking High-Priority Processes</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">scmRTOS</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Appendix</li>
+      <li class="breadcrumb-item active">Example: Job Queue</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="job-queue">Job Queue<a class="headerlink" href="#job-queue" title="Permanent link">🔗</a></h1>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">🔗</a></h2>
+<p>The job queue examined in this example is a message queue based on pointers to job objects. Traditionally, in OSes written in the C programming language, message queues are implemented using <code>void *</code> pointers combined with manual type casting. This approach is dictated by the facilities available in C. As previously discussed, this method is considered unsatisfactory due to concerns of convenience and safety. Therefore, a different approach will be used here—one made possible by the C++ language and offering several advantages.</p>
+<p>First, there is no need for untyped pointers: the template mechanism allows efficient and safe use of pointers to concrete types, eliminating the need for manual type casting.</p>
+<p>Second, flexibility of pointer-based messages can be further enhanced by allowing not only data transfer but also, in a sense, "exporting" actions—the message not only carries data but also enables specific actions to be performed at the receiving end of the queue. This is easily achieved through a hierarchy of polymorphic job classes<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. The approach described will be implemented in this example.</p>
+<p>Since only pointers are placed in the queue, the actual message payloads are located somewhere in memory. The placement method can vary—from static to dynamic; this aspect is omitted in the example, as it is not relevant to the discussion. In practice, the user decides based on task requirements, available resources, personal preferences, etc.</p>
+<p>This example demonstrates a method of delegating job execution implemented using a message queue.</p>
+<h2 id="problem-statement">Problem Statement<a class="headerlink" href="#problem-statement" title="Permanent link">🔗</a></h2>
+<p>Developing virtually any program involves performing various actions, and these actions generally differ in importance and execution priority—which motivates the use of operating systems with priority-based schedulers. It often happens that, while handling events in a process, a need arises to perform an action requiring significant CPU time<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> but without urgency—meaning it can quite reasonably be executed in a lower-priority process. In such cases, it is sensible not to delay the current process by performing the action directly, but to delegate its execution to another, lower-priority process.</p>
+<p>Moreover, such situations may occur multiple times in a program, and a logical solution is to create a dedicated low-priority process to which such jobs can be delegated from other processes when execution in high-priority processes is undesirable or impossible due to task constraints. The job transfer mechanism is conveniently implemented using polymorphic job classes and the <code>OS::channel</code> service as the transport for job objects.</p>
+<h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">🔗</a></h2>
+<p>All jobs—regardless of which process generated them or what specifically needs to be done—share one common property: they must be executed. This allows a mechanism where job execution can be launched in a unified way, while the actual job implementation is handled via virtual functions. To achieve this, an abstract base class is defined that specifies the job object interface:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="mo">01</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">Job</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="mo">02</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="mo">03</span><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="mo">04</span><span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">execute</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="mo">05</span><span class="w">    </span><span class="p">};</span>
+</span></code></pre></div>
+<p>Thus, there is a job object with its primary common property defined: it can be executed.</p>
+<p>For brevity, two different types of time-consuming jobs<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> will be considered:</p>
+<ul>
+<li>computational—for example, evaluating a polynomial;</li>
+<li>transferring a significant amount of data—updating the screen buffer.</li>
+</ul>
+<p>This requires defining two classes:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="mo">01</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">PolyVal</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Job</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="mo">02</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="mo">03</span><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="mo">04</span><span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">execute</span><span class="p">();</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="mo">05</span><span class="w">    </span><span class="p">};</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="mo">06</span><span class="w">   </span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="mo">07</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">UpdateScreen</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Job</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="mi">08</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="mi">09</span><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="mi">10</span><span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">execute</span><span class="p">();</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="mi">11</span><span class="w">    </span><span class="p">};</span>
+</span></code></pre></div>
+<p>Objects of these classes will represent the jobs whose execution is delegated to the low-priority process. For details, see "Listing 1. Types and Objects in the Job Delegation Example".</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="mo">01</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="mo">02</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">Job</span><span class="w"> </span><span class="c1">// abstract job class</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="mo">03</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="mo">04</span><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="mo">05</span><span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">execute</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="mo">06</span><span class="w">    </span><span class="p">};</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="mo">07</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="mi">08</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">Polyval</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Job</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="mi">09</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="mi">10</span><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="mi">11</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// constructors and the rest of the interface</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="mi">12</span><span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">execute</span><span class="p">();</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="mi">13</span><span class="w">   </span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="mi">14</span><span class="w">    </span><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="mi">15</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// representation: polynomial coefficients,</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="mi">16</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// arguments,</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="mi">17</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// result, etc.</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="mi">18</span><span class="w">    </span><span class="p">};</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="mi">19</span><span class="w">   </span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="mi">20</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="mi">21</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">UpdateScreen</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Job</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="mi">22</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="mi">23</span><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="mi">24</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// constructors and the rest of the interface</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="mi">25</span><span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">execute</span><span class="p">();</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="mi">26</span><span class="w">   </span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="mi">27</span><span class="w">    </span><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="mi">28</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// representation</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="mi">29</span><span class="w">    </span><span class="p">};</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="mi">30</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="mi">31</span><span class="w">    </span><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr1</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">HighPriorityProc1</span><span class="p">;</span>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="mi">32</span><span class="w">    </span><span class="p">...</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="mi">33</span><span class="w">    </span><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr3</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">HighPriorityProc2</span><span class="p">;</span>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="mi">34</span><span class="w">    </span><span class="p">...</span>
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="mi">35</span><span class="w">    </span><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr7</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">BackgroundProc</span><span class="p">;</span>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="mi">36</span><span class="w">   </span>
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="mi">37</span><span class="w">    </span><span class="n">OS</span><span class="o">::</span><span class="n">channel</span><span class="o">&lt;</span><span class="n">Job</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job_queue</span><span class="p">;</span><span class="w">      </span><span class="c1">// job queue with capacity for 4 elements</span>
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="mi">38</span><span class="w">    </span><span class="n">Polyval</span><span class="w">              </span><span class="n">poly_val</span><span class="p">;</span><span class="w">       </span><span class="c1">// job object</span>
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="mi">39</span><span class="w">    </span><span class="n">UpdateScreen</span><span class="w">         </span><span class="n">update_screen</span><span class="p">;</span><span class="w">  </span><span class="c1">// job object</span>
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="mi">40</span><span class="w">    </span><span class="p">...</span>
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="mi">41</span><span class="w">    </span><span class="n">HighPriorityProc1</span><span class="w">    </span><span class="n">high_priority_proc1</span><span class="p">;</span>
+</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="mi">42</span><span class="w">    </span><span class="n">HighPriorityProc2</span><span class="w">    </span><span class="n">high_priority_proc2</span><span class="p">;</span>
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="mi">43</span><span class="w">    </span><span class="p">...</span>
+</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a><span class="mi">44</span><span class="w">    </span><span class="n">BackgroundProc</span><span class="w">       </span><span class="n">background_proc</span><span class="p">;</span>
+</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="mi">45</span><span class="w">    </span><span class="c1">//----------------------------------------------––-----------------------</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 1. Types and Objects in the Job Delegation Example  </p>
+</figcaption>
+</figure>
+<p>The abstract base class <code>Job</code> defines the job object interface; objects of this class cannot exist in the program. In this case, the interface is limited to a single function <code>execute()</code>, which enables the job to be run<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>. Two concrete job classes—<code>Polyval</code> and <code>UpdateScreen</code>—are then defined, each targeted at specific goals: the first computes a polynomial value, the second updates the screen buffer.</p>
+<p>The remaining code is entirely standard—it follows the conventional C++ approach to defining types and objects, recommended for use with <strong>scmRTOS</strong>. Note that type definitions and object declarations can be placed in different files (headers and source files) as convenient for the project. Naturally, to avoid compilation errors, type definitions must be visible at points of object declaration—this is a standard requirement of C/C++.</p>
+<p>The actual job delegation code based on the queue is shown below.</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="mo">01</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="mo">02</span><span class="w">    </span><span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">HighPriorityProc1</span><span class="o">::</span><span class="n">exec</span><span class="p">()</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="mo">03</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="mo">04</span><span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">timeout_t</span><span class="w"> </span><span class="n">DATA_UPDATE_PERIOD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="mo">05</span><span class="w">        </span><span class="k">for</span><span class="p">(;;)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="mo">06</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="mo">07</span><span class="w">            </span><span class="p">...</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="mi">08</span><span class="w">            </span><span class="n">sleep</span><span class="p">(</span><span class="n">DATA_UPDATE_PERIOD</span><span class="p">);</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="mi">09</span><span class="w">            </span><span class="p">...</span><span class="w">                          </span><span class="c1">// loading data into the job object</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="mi">10</span><span class="w">            </span><span class="n">job_queue</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="o">&amp;</span><span class="n">poly_val</span><span class="p">);</span><span class="w">   </span><span class="c1">// placing the job into the queue</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="mi">11</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="mi">12</span><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="mi">13</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="mi">14</span><span class="w">    </span><span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">HighPriorityProc2</span><span class="o">::</span><span class="n">exec</span><span class="p">()</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="mi">15</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="mi">16</span><span class="w">        </span><span class="k">for</span><span class="p">(;;)</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="mi">17</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="mi">18</span><span class="w">            </span><span class="p">...</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="mi">19</span><span class="w">   </span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="mi">20</span><span class="w">            </span><span class="k">if</span><span class="p">(...)</span><span class="w"> </span><span class="c1">// screen element has changed</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="mi">21</span><span class="w">            </span><span class="p">{</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="mi">22</span><span class="w">                </span><span class="n">job_queue</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="o">&amp;</span><span class="n">update_screen</span><span class="p">);</span><span class="w"> </span><span class="c1">// placing the job into the queue</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="mi">23</span><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="mi">24</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="mi">25</span><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="mi">26</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="mi">27</span><span class="w">    </span><span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">BackgroundProc</span><span class="o">::</span><span class="n">exec</span><span class="p">()</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="mi">28</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="mi">29</span><span class="w">        </span><span class="k">for</span><span class="p">(;;)</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="mi">30</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="mi">31</span><span class="w">            </span><span class="n">Job</span><span class="w"> </span><span class="o">*</span><span class="n">job</span><span class="p">;</span>
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="mi">32</span><span class="w">            </span><span class="n">job_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">(</span><span class="n">job</span><span class="p">);</span><span class="w"> </span><span class="c1">// extracting a job from the queue</span>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="mi">33</span><span class="w">            </span><span class="n">job</span><span class="o">-&gt;</span><span class="n">execute</span><span class="p">();</span><span class="w">     </span><span class="c1">// executing the job</span>
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a><span class="mi">34</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a><span class="mi">35</span><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a><span class="mi">36</span><span class="w">    </span><span class="c1">//---------------------------------------------------------------------</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 2. Process Executable Functions  </p>
+</figcaption>
+</figure>
+<p>In this example, two high-priority processes delegate part of their responsibilities to a lower-priority (background) process by placing jobs (with or without data<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>) into a queue that the background process handles.</p>
+<p>The background process itself "knows" nothing about what needs to be done for each job—its only responsibility is to launch the specified job, which contains sufficient information about what and how to do. The key point is that the delegated job executes with the appropriate (low, in this case) priority, without delaying high-priority processes<sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup>.</p>
+<p>Obviously, periodic background actions can easily be organized in the job-handling process. This is achieved by calling <code>pop()</code> with a timeout: upon timeout expiration, the process receives control, and the required actions can be performed at that moment. Coordinating these actions with job execution depends on project requirements and user decisions.</p>
+<p>Technical aspects to note:</p>
+<ul>
+<li>Although the queue element type is a pointer to the base class <code>Job</code>, addresses of objects derived from <code>Job</code> are placed in the queue. This is crucial—it forms the basis for virtual function operation, central to polymorphic behavior. When <code>job-&gt;execute()</code> is called, the function belonging to the class of the object whose address was placed in the queue will actually be invoked;</li>
+<li>The job objects in the example are created statically. This is for simplicity—the creation method is irrelevant here; objects can be static or dynamically allocated, as long as they have non-local lifetime (i.e., persist between function calls). The existence of an active job is indicated not by the physical presence of the job object but by the presence of its address pointer in the queue.</li>
+</ul>
+<p>Overall, the mechanism described is quite simple, has low overhead, and allows flexible distribution of program load across execution priorities.</p>
+<div class="admonition info">
+<p class="admonition-title"><strong>NOTE</strong></p>
+<p>The mechanism demonstrated above can be applied not only for executing low-priority jobs but also, conversely, for high-priority execution—relevant when a job requires urgency not provided by the originating process's priority. Technically, job transfer organization is identical to that described, with the only difference being that the job-handling process is a foreground<sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup> rather than background process.</p>
+</div>
+<h4 id="mutual-exclusion-semaphores-mutexes-and-the-problem-of-blocking-high-priority-processes">Mutual-Exclusion Semaphores (Mutexes) and the Problem of Blocking High-Priority Processes<a class="headerlink" href="#mutual-exclusion-semaphores-mutexes-and-the-problem-of-blocking-high-priority-processes" title="Permanent link">🔗</a></h4>
+<p>When discussing features of shared resource access from different processes via mutual-exclusion semaphores, a situation was described that is addressed by the <a href="../ipcs/#mutex-priority-inversion">priority inheritance method</a>.</p>
+<p>The essence was that, under certain circumstances, a low-priority process can indirectly block a high-priority process. To solve this problem, the technique known as "priority inheritance" is often used: when a high-priority process attempts to acquire a mutex already held by a low-priority process, instead of simply waiting normally, the priorities are temporarily swapped until the mutex is released.</p>
+<p>As previously noted, this method is not used in <strong>scmRTOS</strong> due to overhead comparable to (or greater than) the <code>TMutex</code> implementation itself.</p>
+<p>To address the problem described, the technique presented in this example can be applied—only using a high-priority process as the job handler instead of a low-priority one. The program should be structured so that processes accessing shared resources do not perform the work themselves but delegate it as jobs to the high-priority handler process.</p>
+<p>In this situation, no priority-related collisions arise, and the overhead of transferring jobs via pointers is negligible.</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>For those new to C++ but familiar with C, an analogy can be drawn regarding technical implementation. The essence of polymorphism is performing different actions under the same description. C++ supports two kinds of polymorphism—static and dynamic. Static polymorphism is implemented via templates. Dynamic polymorphism is based on virtual functions. A hierarchy of polymorphic classes is built using dynamic polymorphism.</p>
+<p>Technically, the virtual function mechanism is implemented using tables of function pointers. Therefore, a similar mechanism could be implemented in C—for example, using structures containing pointers to arrays of function pointers. However, in C this would require much manual work, making it error-prone, less readable, labor-intensive, and inconvenient. C++ simply shifts all the routine work to the compiler, relieving the user from writing low-level code involving function pointer tables, their correct initialization, and usage.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>For example, extensive computations or updating the screen context in a program with a graphical user interface.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>Obviously, this number can easily be increased if needed.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>The interface can be extended with additional pure virtual functions if needed.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:5">
+<p>A job may include any data that the sender places inside the job object.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:6">
+<p>This applies not only to the processes delegating the job but also to other processes that might be blocked by lengthy job execution in high-priority processes.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:7">
+<p>Relative to the processes placing jobs in the queue.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../profiler/" class="btn btn-neutral float-left" title="Process Performance Profiling"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../glossary/" class="btn btn-neutral float-right" title="Glossary">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../profiler/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../glossary/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/mathjax.js"></script>
+      <script src="../../js/mathjax/tex-mml-chtml.js"></script>
+      <script src="../../js/wavedrom.min.js"></script>
+      <script src="../../js/wavedrom_loader.js"></script>
+      <script src="../../js/wavedrom.unpkg.js"></script>
+      <script src="../../js/wavedrom_skin_default.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+</script></body>
+</html>
