@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Process Performance Profiling - scmRTOS</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Process Performance Profiling";
+        var mkdocs_page_input_path = "src/profiler.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+ <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> scmRTOS
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Intro</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../..">Instead of a preface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">RTOS Components</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../kernel/">Kernel</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipcs/">Interprocess Communications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ports/">Ports</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendix</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">Debug</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Process Performance Profiling</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#purpose">Purpose</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#statistical-method">Statistical Method</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#measurement-method">Measurement Method</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">scmRTOS</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Appendix</li>
+      <li class="breadcrumb-item active">Process Performance Profiling</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="extension-developmentprocess-profiler">Extension Development:<br>Process Profiler<a class="headerlink" href="#extension-developmentprocess-profiler" title="Permanent link">🔗</a></h1>
+<h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">🔗</a></h2>
+<p>The process profiler is an object that performs the collection of information about the relative active time of system processes, processes this information, and has an interface through which a user program can access the profiling results.</p>
+<p>Information about the relative process execution time can be collected in different ways&nbsp;– in particular, by sampling the current active process and by measuring process execution time. Essentially, the profiler class itself can be the same, with the choice of implementation for both methods made by organizing how the profiler interacts with OS objects and uses the processor's hardware resources.</p>
+<p>The implementation of the profiler class itself requires access to the internals of the OS, but all these needs can be satisfied by the operating system's standard facilities, which are provided to the user for such purposes. Thus, the active process time profiler can be implemented as an OS extension.</p>
+<p>The goal of this example is to show how to create a useful tool that extends the functional capabilities of the operating system without modifying the OS source code. Additional requirements:</p>
+<ul>
+<li>The developed class must not impose restrictions on how the profiler is used&nbsp;– i.e., the information collection period and the place of use must be entirely determined by the user;</li>
+<li>The implementation must be as resource-efficient as possible, both in terms of executable code size and performance, i.e., the use of floating-point calculations, in particular, must be excluded.</li>
+</ul>
+<h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">🔗</a></h2>
+<p>The profiler itself performs two main functions&nbsp;– collecting information about the relative active time of processes and processing this information to obtain results.</p>
+<p>Estimating the process execution time can be implemented based on a counter that accumulates this information. Accordingly, for all system processes, an array of such counters is required. An array of variables storing the profiling results is also required.</p>
+<p>Thus, the profiler must contain two arrays of variables: a function for updating the counters according to process activity, a function for processing the counter values and saving the results, and a function for accessing the profiling results. To increase flexibility of use, the base of the profiler is implemented as a template&nbsp;– see "Listing 1. Profiler".</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="mo">01</span><span class="w">    </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="mo">02</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">process_profiler</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">TKernelAgent</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="mo">03</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="mo">04</span><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">time_interval</span><span class="p">();</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="mo">05</span><span class="w">    </span><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="mo">06</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="n">process_profiler</span><span class="p">();</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="mo">07</span><span class="w">    </span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="mi">08</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">advance_counters</span><span class="p">()</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="mi">09</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="mi">10</span><span class="w">            </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">elapsed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_interval</span><span class="p">();</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="mi">11</span><span class="w">            </span><span class="n">counters</span><span class="p">[</span><span class="w"> </span><span class="n">cur_proc_priority</span><span class="p">()</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">elapsed</span><span class="p">;</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="mi">12</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="mi">13</span><span class="w">    </span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="mi">14</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="n">T</span><span class="w">    </span><span class="n">get_result</span><span class="p">(</span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">index</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">[</span><span class="n">index</span><span class="p">];</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="mi">15</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">process_data</span><span class="p">();</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="mi">16</span><span class="w">    </span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="mi">17</span><span class="w">    </span><span class="k">protected</span><span class="o">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="mi">18</span><span class="w">        </span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w">  </span><span class="n">counters</span><span class="p">[</span><span class="n">OS</span><span class="o">::</span><span class="n">PROCESS_COUNT</span><span class="p">];</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="mi">19</span><span class="w">                 </span><span class="n">T</span><span class="w">         </span><span class="n">result</span><span class="w">  </span><span class="p">[</span><span class="n">OS</span><span class="o">::</span><span class="n">PROCESS_COUNT</span><span class="p">];</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="mi">20</span><span class="w">    </span><span class="p">};</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 1. Profiler</p>
+</figcaption>
+</figure>
+<p>The profiler is implemented as a template, whose parameter specifies the type of variables containing the counter and result values. This allows for selecting the most suitable option for a specific application. It is assumed that the template parameter will be a numeric type — for example, <code>uint32_t</code> or <code>float</code>.</p>
+<p>If the target platform has hardware floating-point support, choosing <code>float</code> will be preferable — such an implementation will likely be both faster and more compact. In the absence of such support, using integer types would be advisable.</p>
+<p>In addition to the above, there is a very important function <code>time_interval()</code> (4). The <code>time_interval()</code> function is defined by the user based on the available resources and the chosen method for collecting process execution time information.</p>
+<p>The call to the <code>advance_counters()</code> function must be organized by the user, and the call site is determined by the chosen profiling method — statistical or measurement-based.</p>
+<p>The algorithm for processing the collected information results in normalizing the counter values accumulated over the measurement period — see "Listing 2. Processing Profiling Results".</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="mo">01</span><span class="w">    </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="mo">02</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">process_profiler</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">process_data</span><span class="p">()</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="mo">03</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="mo">04</span><span class="w">        </span><span class="c1">// Use cache to make critical section fast as possible</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="mo">05</span><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">counters_cache</span><span class="p">[</span><span class="n">OS</span><span class="o">::</span><span class="n">PROCESS_COUNT</span><span class="p">];</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="mo">06</span><span class="w">    </span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="mo">07</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="mi">08</span><span class="w">            </span><span class="n">CritSect</span><span class="w"> </span><span class="n">cs</span><span class="p">;</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="mi">09</span><span class="w">            </span><span class="k">for</span><span class="p">(</span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">PROCESS_COUNT</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="mi">10</span><span class="w">            </span><span class="p">{</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="mi">11</span><span class="w">                </span><span class="n">counters_cache</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">counters</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="mi">12</span><span class="w">                </span><span class="n">counters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="mi">13</span><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="mi">14</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="mi">15</span><span class="w">    </span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="mi">16</span><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">sum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="mi">17</span><span class="w">        </span><span class="k">for</span><span class="p">(</span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">PROCESS_COUNT</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="mi">18</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="mi">19</span><span class="w">            </span><span class="n">sum</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">counters_cache</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="mi">20</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="mi">21</span><span class="w">    </span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="mi">22</span><span class="w">        </span><span class="k">for</span><span class="p">(</span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">PROCESS_COUNT</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="mi">23</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="mi">24</span><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_integral_v</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="mi">25</span><span class="w">            </span><span class="p">{</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="mi">26</span><span class="w">                </span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">counters_cache</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">*</span><span class="mi">10000</span><span class="o">/</span><span class="n">sum</span><span class="p">;</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="mi">27</span><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="mi">28</span><span class="w">            </span><span class="k">else</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="mi">29</span><span class="w">            </span><span class="p">{</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="mi">30</span><span class="w">                </span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">counters_cache</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">/</span><span class="n">sum</span><span class="o">*</span><span class="mi">100</span><span class="p">;</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="mi">31</span><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="mi">32</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="mi">33</span><span class="w">    </span><span class="p">}</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 2. Processing Profiling Results</p>
+</figcaption>
+</figure>
+<p>The provided code, in particular, shows how the result processing is selected depending on the template parameter type (24).</p>
+<p>To avoid blocking interrupts for a significant amount of time while accessing the counters array<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>, this array is copied into a temporary array, which is then used for further data processing.</p>
+<p>When an integer type is chosen as the template parameter, the resulting profiling resolution is one hundredth of a percent, and the final results are stored in hundredths of a percent. This is implemented by normalizing the value of each counter, previously multiplied by a coefficient defining the result resolution<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>, relative to the sum of the values of all counters.</p>
+<p>From these circumstances follows a natural limitation on the maximum value of the counter used in the calculations. For example, if the type of variables serving as the profiler's counters is a 32-bit unsigned integer, which can represent numbers in the range <span class="arithmatex">\(0..2^{32}-1 = 0..4294967295\)</span>, and the calculations involve multiplication by a coefficient of 10000, then to prevent overflow during calculations, the counter value must not exceed:</p>
+<div class="arithmatex">\[
+N_{max} = \frac{2^{32} - 1}{10000} = \frac{4294967295}{10000} = 429496 \tag{1}
+\]</div>
+<p>The resulting value is relatively small, so to extend this limitation, the calculations are performed with 64-bit precision — the counter value is cast to a 64-bit unsigned integer (26).</p>
+<p>The user must also ensure that no counter overflow occurs during the profiling period, i.e., the accumulated value in any counter does not exceed <span class="arithmatex">\(2^{32}-1\)</span>. This requirement is met by coordinating the profiling period and the resolution of the value returned by the <code>time_interval()</code> function.</p>
+<p>The profiler is integrated into the project by including the header file <code>profiler.h</code> in the project's configuration file <code>scmRTOS_extensions.h</code>.</p>
+<h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">🔗</a></h3>
+<h4 id="statistical-method">Statistical Method<a class="headerlink" href="#statistical-method" title="Permanent link">🔗</a></h4>
+<p>In the case of the statistical method, the call to the <code>advance_counters()</code> function should be placed in code that gains control periodically at equal time intervals — for example, in an interrupt handler of a timer; in <strong>scmRTOS</strong>, the system timer interrupt handler is well-suited for this purpose. In this case, the call to <code>advance_counters()</code> is placed in the user-defined system timer hook, whose invocation must be enabled during configuration. The <code>time_interval()</code> function in this case must always return 1.</p>
+<h4 id="measurement-method">Measurement Method<a class="headerlink" href="#measurement-method" title="Permanent link">🔗</a></h4>
+<p>When choosing the measurement-based profiling method, the call to the <code>advance_counters()</code> function must occur during context switches. This can be achieved by placing its call in the user-defined context switch interrupt hook.</p>
+<p>The implementation of the <code>time_interval()</code> function in this case becomes somewhat more complex — the function must return a value proportional to the time interval between its previous and current calls. Measuring this time interval requires utilizing certain hardware resources of the target processor. In most cases, any hardware timer<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> that allows reading its timer register<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> is suitable for this.</p>
+<p>The scale of the value returned by the <code>time_interval()</code> function must be coordinated with the profiling period so that the sum of all values returned by this function for any process over the profiling period does not exceed <span class="arithmatex">\(2^{32}-1\)</span> — see "Listing 3. Time Interval Measurement Function".</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="mo">01</span><span class="w">    </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span><span class="w">                         </span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="mo">02</span><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">process_profiler</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">time_interval</span><span class="p">()</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="mo">03</span><span class="w">    </span><span class="p">{</span><span class="w">                                            </span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="mo">04</span><span class="w">        </span><span class="k">static</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">cycles</span><span class="p">;</span><span class="w">                  </span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="mo">05</span><span class="w">                                                 </span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="mo">06</span><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">cyc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpa</span><span class="p">(</span><span class="n">GTMR_CNT0_REG</span><span class="p">);</span><span class="w">       </span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="mo">07</span><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cyc</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">cycles</span><span class="p">;</span><span class="w">             </span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="mi">08</span><span class="w">        </span><span class="n">cycles</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="n">cyc</span><span class="p">;</span><span class="w">                      </span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="mi">09</span><span class="w">                                                 </span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="mi">10</span><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">res</span><span class="p">;</span><span class="w">                              </span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="mi">11</span><span class="w">    </span><span class="p">}</span><span class="w">                                            </span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 3. Time Interval Measurement Function</p>
+</figcaption>
+</figure>
+<p>In this example, a hardware processor clock cycle counter is used to measure time intervals. The processor operates at a frequency of 400 MHz, corresponding to a clock period of 2.5 ns. The profiling period is chosen to be 1 s. The ratio of the periods is such that the counter can reach the following value during the profiling period:</p>
+<div class="arithmatex">\[
+N = \frac{2}{5 \cdot 10^{-9}} = 400 000 000 \tag{2}
+\]</div>
+<p>This value is significantly less than <span class="arithmatex">\(2^{32}-1\)</span>, so no additional actions are necessary. Otherwise, it would be necessary to modify the function code to ensure the specified condition is met.</p>
+<p>Organizing the period for collecting information about the relative active time of processes and the method for displaying the profiling results are the user's responsibility.</p>
+<p>For convenience, a user-defined class can be created to simplify usage by adding a function to display the results — see "Listing 4. User Profiler Class".</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="mo">01</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">ProcProfiler</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">process_profiler</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="mo">02</span><span class="w">    </span><span class="p">{</span><span class="w">                                                                  </span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="mo">03</span><span class="w">    </span><span class="k">public</span><span class="o">:</span><span class="w">                                                            </span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="mo">04</span><span class="w">        </span><span class="n">ProcProfiler</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w">                                              </span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="mo">05</span><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="n">get_results</span><span class="p">();</span><span class="w">                                            </span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="mo">06</span><span class="w">    </span><span class="p">};</span><span class="w">                                                                 </span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="mo">07</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">ProcProfiler</span><span class="o">::</span><span class="n">get_results</span><span class="p">()</span><span class="w">                                      </span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="mi">08</span><span class="w">    </span><span class="p">{</span><span class="w">                                                                     </span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="mi">09</span><span class="w">        </span><span class="n">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">------------------------------</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w">                      </span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="mi">10</span><span class="w">        </span><span class="n">print</span><span class="p">(</span><span class="s">&quot; Pr |  CPU, %% | Slack | Name</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w">                         </span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="mi">11</span><span class="w">        </span><span class="n">print</span><span class="p">(</span><span class="s">&quot;------------------------------</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w">                        </span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="mi">12</span><span class="w">                                                                          </span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="mi">13</span><span class="w">        </span><span class="err">#</span><span class="k">if</span><span class="w"> </span><span class="n">scmRTOS_DEBUG_ENABLE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w">                                     </span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="mi">14</span><span class="w">        </span><span class="k">for</span><span class="p">(</span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">PROCESS_COUNT</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="p">)</span><span class="w">                     </span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="mi">15</span><span class="w">        </span><span class="p">{</span><span class="w">                                                                 </span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="mi">16</span><span class="w">            </span><span class="o">--</span><span class="n">i</span><span class="p">;</span><span class="w">                                                          </span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="mi">17</span><span class="w">            </span><span class="kt">float</span><span class="w"> </span><span class="n">proc_busy</span><span class="p">;</span><span class="w">                                              </span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="mi">18</span><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_integral_v</span><span class="o">&lt;</span><span class="n">proc_profiler_data_t</span><span class="o">&gt;</span><span class="p">)</span><span class="w">        </span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="mi">19</span><span class="w">                </span><span class="n">proc_busy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">proc_profiler</span><span class="p">.</span><span class="n">get_result</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="mf">100.0</span><span class="p">;</span><span class="w">            </span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="mi">20</span><span class="w">            </span><span class="k">else</span><span class="w">                                                          </span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="mi">21</span><span class="w">                </span><span class="n">proc_busy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">proc_profiler</span><span class="p">.</span><span class="n">get_result</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w">                  </span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="mi">22</span><span class="w">                                                                          </span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="mi">23</span><span class="w">            </span><span class="n">print</span><span class="p">(</span><span class="s">&quot; %d  | %7.4f | %4d  | %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">proc_busy</span><span class="p">,</span><span class="w">             </span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="mi">24</span><span class="w">                      </span><span class="n">OS</span><span class="o">::</span><span class="n">get_proc</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">stack_slack</span><span class="p">()</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="n">stack_item_t</span><span class="p">),</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="mi">25</span><span class="w">                      </span><span class="n">OS</span><span class="o">::</span><span class="n">get_proc</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">()</span><span class="w"> </span><span class="p">);</span><span class="w">                          </span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="mi">26</span><span class="w">        </span><span class="p">}</span><span class="w">                                                                 </span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="mi">27</span><span class="w">        </span><span class="err">#</span><span class="n">endif</span><span class="w">                                                            </span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="mi">28</span><span class="w">                                                                          </span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="mi">29</span><span class="w">        </span><span class="n">print</span><span class="p">(</span><span class="s">&quot;------------------------------</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w">                      </span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="mi">30</span><span class="w">    </span><span class="p">}</span><span class="w">                                                                     </span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 4. User Profiler Class</p>
+</figcaption>
+</figure>
+<p>Finally, all that remains is to create an object of the class and ensure the periodic calling of the <code>process_data()</code> function:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">ProcProfiler</span><span class="w"> </span><span class="n">proc_profiler</span><span class="p">;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="p">...</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="p">...</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">proc_profiler</span><span class="p">.</span><span class="n">process_data</span><span class="p">();</span><span class="w">  </span><span class="c1">// periodic call approx every 1 second</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="p">...</span>
+</span></code></pre></div>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>This access must be made atomic to prevent corruption of the algorithm due to the possibility of asynchronous changes to the counter values when the <code>advance_counters()</code> function is called.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>In this case, this coefficient is 10000, which sets the resolution to 1/10000, corresponding to 0.01%.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>Some processors, for example, Blackfin or Cortex-A, have a dedicated hardware counter for processor clock cycles, which increments on every clock cycle, allowing for very simple organization of time interval measurement.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>For instance, the WatchDog Timer of the <strong>MSP430</strong> MCU, which is quite suitable for use as a system timer, is not suitable for measuring time intervals because it does not allow the program to access its counting register.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../debug/" class="btn btn-neutral float-left" title="Debug"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../glossary/" class="btn btn-neutral float-right" title="Glossary">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../debug/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../glossary/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/mathjax.js"></script>
+      <script src="../../js/mathjax/tex-mml-chtml.js"></script>
+      <script src="../../js/wavedrom.min.js"></script>
+      <script src="../../js/wavedrom_loader.js"></script>
+      <script src="../../js/wavedrom.unpkg.js"></script>
+      <script src="../../js/wavedrom_skin_default.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+</script></body>
+</html>

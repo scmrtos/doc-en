@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Overview - scmRTOS</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Overview";
+        var mkdocs_page_input_path = "src/overview.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+ <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> scmRTOS
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Intro</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../..">Instead of a preface</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Overview</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#general-information">General Information</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#os-structure">OS Structure</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#kernel">Kernel</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#processes">Processes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#inter-process-communication">Inter-Process Communication</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#software-model">Software Model</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#composition-and-organization">Composition and Organization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#internal-structure">Internal Structure</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#critical-sections">Critical Sections</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#built-in-type-aliases">Built-in Type Aliases</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#using-the-os">Using the OS</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">RTOS Components</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../kernel/">Kernel</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipcs/">Interprocess Communications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ports/">Ports</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendix</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">Debug</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Performance Profiling</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">scmRTOS</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Intro</li>
+      <li class="breadcrumb-item active">Overview</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="operating-system-overview">Operating System Overview<a class="headerlink" href="#operating-system-overview" title="Permanent link">🔗</a></h1>
+<h2 id="general-information">General Information<a class="headerlink" href="#general-information" title="Permanent link">🔗</a></h2>
+<p><strong>scmRTOS</strong> is a real-time operating system with priority-based preemptive multitasking. The OS supports up to 32 processes (including the system <strong>IdleProc</strong> process, meaning up to 31 user processes), each with a unique priority. All processes are static, i.e., their number is determined at the project build stage and they cannot be added or removed during runtime.</p>
+<p>The decision to forgo dynamic process creation is driven by the need to conserve resources, which are very limited in single-chip MCUs. Dynamic process deletion is also not implemented because it offers little benefit—the program memory used by a process is not freed, and RAM intended for future use would require the ability to be allocated and deallocated using a memory manager. Such a manager is a complex component in itself, requires significant resources, and is typically not used in single-chip MCU projects<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>.</p>
+<p>In the current version, process priorities are also static. Each process receives its priority at the project build stage, and this priority cannot be changed during program execution. This approach is similarly motivated by the goal of making the system as lightweight as possible in terms of resource requirements and runtime overhead. Changing priorities during system operation is a highly non-trivial mechanism. For it to work correctly, it requires analyzing the state of the entire system (kernel, services) followed by modifying kernel components and other OS parts (semaphores, event flags, etc.). This inevitably leads to prolonged periods of operation with interrupts disabled and, consequently, significantly degrades the system's real-time performance.</p>
+<h2 id="os-structure">OS Structure<a class="headerlink" href="#os-structure" title="Permanent link">🔗</a></h2>
+<p>The system consists of three main components: the Kernel, processes, and inter-process communication (IPC) facilities.</p>
+<h3 id="kernel">Kernel<a class="headerlink" href="#kernel" title="Permanent link">🔗</a></h3>
+<p>The kernel performs the following functions:</p>
+<ul>
+<li>Process organization and management.</li>
+<li>Scheduling at both the process and interrupt levels.</li>
+<li>Support for inter-process communication.</li>
+<li>System time support (system timer).</li>
+<li>Support for extensions.</li>
+</ul>
+<p>For more details on the kernel's structure, composition, functions, and mechanisms, see the <a href="../kernel/">OS Kernel</a> section.</p>
+<h3 id="processes">Processes<a class="headerlink" href="#processes" title="Permanent link">🔗</a></h3>
+<p>Processes provide the ability to create a separate (asynchronous relative to others) program execution flow. For this purpose, each process implements a function that must contain an infinite loop, which serves as the process's main loop&nbsp;– see "Listing 1. Process Execution Function" for an example.</p>
+<figure>
+<p><a name="process-exec"></a>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="mi">1</span><span class="w">    </span><span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">slon_proc</span><span class="o">::</span><span class="n">exec</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="mi">2</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="mi">3</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// Declarations</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="mi">4</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// Init process’s data</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="mi">5</span><span class="w">        </span><span class="k">for</span><span class="p">(;;)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="mi">6</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="mi">7</span><span class="w">            </span><span class="p">...</span><span class="w"> </span><span class="c1">// process’s main loop</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="mi">8</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="mi">9</span><span class="w">    </span><span class="p">}</span>
+</span></code></pre></div></p>
+<figcaption>
+<p>Listing 1. Process Execution Function</p>
+</figcaption>
+</figure>
+<p>Upon system startup, control is transferred to the process function. At its beginning, you can place declarations for the data it uses (3) and initialization code (4), followed by the process's main loop (5)-(8). The user code must be written to prevent exiting the process function. For example, once it enters the main loop, it should not leave it (the primary approach). Alternatively, if it does exit the main loop, it must enter another loop (even an empty one) or go into an infinite "sleep" by calling the <code>sleep()</code><sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> function without parameters (or with parameter "0"). For more details, see the <a href="../processes/#process-sleep"><code>sleep()</code> Function</a>. The process code must also not contain <code>return</code> statements to exit the function.</p>
+<h3 id="inter-process-communication">Inter-Process Communication<a class="headerlink" href="#inter-process-communication" title="Permanent link">🔗</a></h3>
+<p>Since processes in the system execute in parallel and asynchronously relative to each other, simply using global data for communication between them is incorrect and unsafe. While one process is accessing an object (which could be a variable of a built-in type, an array, a structure, a class object, etc.), its execution can be interrupted by another (higher-priority) process that also accesses the same object. Due to the non-atomic nature of access operations (read/write), the second process can either disrupt the correctness of the first process's actions or simply read incorrect data.</p>
+<p>To prevent such situations, special measures must be taken: access must be performed within so-called Critical Sections (where control transfer between processes is prohibited), or specialized inter-process communication (IPC) facilities must be used. The following IPC facilities are available in <strong>scmRTOS</strong>:</p>
+<ul>
+<li>Event Flags (<code>OS::TEventFlag</code>);</li>
+<li>Mutual Exclusion Semaphores (<code>OS::TMutex</code>);</li>
+<li>Data Channels in the form of a queue for bytes or objects of arbitrary type (<code>OS::channel</code>);</li>
+<li>Messages (<code>OS::message</code>).</li>
+</ul>
+<p>The developer must decide which facility (or combination thereof) to use in each specific case, based on task requirements, available resources, and personal preference.</p>
+<p>Starting with <strong>scmRTOS v4</strong>, inter-process communication facilities (services) are built upon a common specialized base class, <code>TService</code>. This class provides all the necessary foundational tools for implementing service classes/templates. Its interface is documented and intended for users to extend the set of services themselves. If needed, a user can design and implement their own IPC facility that best meets the requirements of a specific target project.</p>
+<h2 id="software-model">Software Model<a class="headerlink" href="#software-model" title="Permanent link">🔗</a></h2>
+<h3 id="composition-and-organization">Composition and Organization<a class="headerlink" href="#composition-and-organization" title="Permanent link">🔗</a></h3>
+<p>The <strong>scmRTOS</strong> source code in any project consists of three parts: the common (core), platform-dependent (target), and project-dependent (project) parts.</p>
+<p>The <strong>common part</strong> contains declarations and definitions for kernel functions, processes, system services, as well as a small support library containing some useful code, parts of which are used directly by the OS.</p>
+<p>The <strong>platform-dependent part</strong> includes declarations and definitions responsible for implementing functions inherent to the specific target platform, language extensions for the compiler used, etc. This part encompasses the assembly code for context switching and system startup, the function for setting up the stack frame structure, the definition of a critical section wrapper class, the interrupt handler for the hardware timer used as the system timer on that platform, and other platform-dependent behaviors.</p>
+<p>The <strong>project-dependent part</strong> consists of three header files containing configuration macro definitions, includes for extensions, and code necessary for fine-tuning the operating system for a specific target project. This includes, in particular, type alias definitions for setting the bit width of timeout variables, selecting the source for the context switch interrupt, and other tools required for optimal system operation.</p>
+<p>The recommended placement of system source files is as follows:
+*   Common part&nbsp;– in a separate <code>core</code> directory.
+*   Platform-dependent part&nbsp;– in its own <code>&lt;target&gt;</code> directory, where <code>target</code> is the name of the system's target port.
+*   Project-dependent part&nbsp;– directly within the project's source files.</p>
+<p>This structure is suggested for ease of project storage, transfer, and maintenance, as well as for a simpler and safer system update process when migrating to new versions.</p>
+<p>The source code of the common part is contained in eight files:</p>
+<ul>
+<li><code>scmRTOS.h</code>&nbsp;– The main header file; it includes the entire hierarchy of system header files.</li>
+<li><code>os_kernel.h</code>&nbsp;– Core declarations and type definitions for the OS kernel.</li>
+<li><code>os_kernel.cpp</code>&nbsp;– Object declarations and function definitions for the kernel.</li>
+<li><code>scmRTOS_defs.h</code>&nbsp;– Auxiliary declarations and macros.</li>
+<li><code>os_services.h</code>&nbsp;– Type and service template definitions.</li>
+<li><code>os_services.cpp</code>&nbsp;– Service function definitions.</li>
+<li><code>usrlib.h</code>&nbsp;– Type and template definitions for the support library.</li>
+<li><code>usrlib.cpp</code>&nbsp;– Support library function definitions.</li>
+</ul>
+<p>As evident from the list above, <strong>scmRTOS</strong> also includes a small support library containing code used by the OS facilities<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>. Since this library is not essentially part of the OS itself, its examination will not be covered in detail in this document.</p>
+<p>The source code of the platform-dependent part is located in three files:</p>
+<ul>
+<li><code>os_target.h</code>&nbsp;– Platform-dependent declarations and macros.</li>
+<li><code>os_target_asm.ext</code><sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>&nbsp;– Low-level code, context switching functions, OS startup.</li>
+<li><code>os_target.cpp</code>&nbsp;– Definitions for the process stack frame initialization function, the interrupt handler function for the timer used as the system timer, and the root function of the background (idle) process.</li>
+</ul>
+<p>The project-dependent part consists of three header files:</p>
+<ul>
+<li><code>scmRTOS_config.h</code>&nbsp;– Configuration macros and aliases for some types, particularly the type defining the bit width of timeout objects.</li>
+<li><code>scmRTOS_target_cfg.h</code>&nbsp;– Code for tuning OS mechanisms to the needs of a specific project. This can include, for example, assigning the interrupt vector for the hardware timer interrupt handler chosen as the system timer, macros for controlling the system timer, defining the function for activating the context switch interrupt, etc.</li>
+<li><code>scmRTOS_extensions.h</code>&nbsp;– Manages the inclusion of extensions. For more details, see <a href="../kernel/#kernel-agent">TKernelAgent and Extensions</a>.</li>
+</ul>
+<p>Понял, исправляю. Уберу выделение жирным для названий в `` и буду строже следовать оригинальному форматированию.</p>
+<h3 id="internal-structure">Internal Structure<a class="headerlink" href="#internal-structure" title="Permanent link">🔗</a></h3>
+<p>Everything related to <strong>scmRTOS</strong>, except for a few functions implemented in assembly and having the <code>extern "C"</code> linkage specification, is placed inside the <code>OS</code> namespace — this method implements a separate namespace for the operating system's components.</p>
+<p>The following classes are declared within this namespace<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>:</p>
+<ul>
+<li><code>TKernel</code>. Since the kernel in the system can be represented by only one instance, only one object of this class exists. The user must not create objects of this class;</li>
+<li><code>TBaseProcess</code>. Implements the object type that serves as the basis for constructing the <code>process</code> template, upon which any (user or system) OS process is implemented;</li>
+<li><code>process</code>. A template upon which the type of any OS process is created.</li>
+<li><code>TISRW</code>. This is a wrapper class to simplify and automate the procedure for creating interrupt handler code. Its constructor performs actions upon entering an interrupt handler, and its destructor performs the corresponding actions upon exit.</li>
+<li><code>TKernelAgent</code>. A special service class intended to provide access to the necessary kernel resources for extending OS capabilities. The <code>TService</code> class, which serves as the base for all inter-process communication facilities, as well as the profiler class, are built upon this class.</li>
+</ul>
+<p>The list of service classes includes:</p>
+<ul>
+<li><code>TService</code>. A base class for building all types and templates of inter-process communication facilities. Contains common functionality and defines the Application Programming Interface (API) for all descendant types. Serves as the basis for extending the set of IPC facilities.</li>
+<li><code>TEventFlag</code>. Designed for inter-program interactions via a binary semaphore (event flag);</li>
+<li><code>TMutex</code>. A binary semaphore designed for organizing mutual exclusion of access to shared resources;</li>
+<li><code>message</code>. A template for creating message objects. A message is "similar" to an event flag but can additionally contain an object of an arbitrary type (usually a structure) representing the message body;</li>
+<li><code>channel</code>. A template for creating a data channel for an arbitrary type. Serves as the basis for building message queues.</li>
+</ul>
+<p>As can be seen from the list above, counting semaphores are absent. The reason for this is that, despite all desire, no acute necessity for them could be identified. Resources that need to be controlled using counting semaphores are in acute shortage in single-chip MCUs, primarily RAM. Situations where it is still necessary to control the available quantity are handled using objects created based on the <code>OS::channel</code> template, which internally already implements the corresponding mechanism in one form or another. If such a service is needed, the user can independently add it to the base set by creating their own implementation as an extension; see <a href="../kernel/#kernel-agent">TKernelAgent and Extensions</a>.</p>
+<p><strong>scmRTOS</strong> provides the user with several control functions:</p>
+<ul>
+<li><code>run()</code>. Designed for starting the OS. When this function is called, the actual operation of the operating system begins — control is transferred to the processes, whose work and mutual interaction are determined by the user program. After transferring control to the OS kernel code, the function does not regain it (control) and, consequently, a return from the function is not provided;</li>
+<li><code>lock_system_timer()</code>. Blocks interrupts from the system timer. Since the selection and servicing of the system timer hardware fall under the project's competence, the user must define the content of this function. The same applies to the paired function <code>unlock_system_timer()</code>;</li>
+<li><code>unlock_system_timer()</code>. Unblocks interrupts from the system timer;</li>
+<li><code>get_tick_count()</code>. Returns the number of system timer ticks. The system timer tick counter must be enabled when configuring the system;</li>
+<li><code>get_proc()</code>. Returns a pointer to a constant process object based on the index passed to the function as an argument. The index is essentially the value of the process's priority.</li>
+</ul>
+<h3 id="critical-sections">Critical Sections<a class="headerlink" href="#critical-sections" title="Permanent link">🔗</a></h3>
+<p>Due to the preemptive nature of process execution, any process can be interrupted at an arbitrary point in time. On the other hand, there are a number of cases<sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup> where it is necessary to eliminate the possibility of interrupting a process during the execution of a specific code fragment. This is achieved by disabling task switching<sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup> for the duration of that fragment's execution. In other words, this fragment becomes a non-interruptible section.</p>
+<p>In OS terminology, such a section is called a <strong>critical section</strong>. To simplify the creation of a critical section, a special wrapper class, <code>TCritSect</code>, is provided. The constructor of this class saves the state of the processor resource that controls the global enabling/disabling of interrupts and then disables interrupts. The destructor restores this processor resource to the state it was in before the interrupts were disabled.</p>
+<p>Thus, if interrupts were already disabled, they will remain disabled. If they were enabled, they will be re-enabled. The implementation of this class is platform-dependent, so its definition is located in the corresponding <code>os_target.h</code> file.
+Using <code>TCritSect</code> is straightforward: at the point that marks the beginning of the critical section, simply declare an object of this type. From the point of declaration until the end of the block, interrupts will be disabled<sup id="fnref:8"><a class="footnote-ref" href="#fn:8">8</a></sup>.</p>
+<h3 id="built-in-type-aliases">Built-in Type Aliases<a class="headerlink" href="#built-in-type-aliases" title="Permanent link">🔗</a></h3>
+<p>To simplify working with the source code and to enhance portability, the following type aliases are defined:</p>
+<ul>
+<li><code>TProcessMap</code>&nbsp;– A type for defining a variable that functions as a <strong>process map</strong>. Its size depends on the number of processes in the system. Each process corresponds to a unique tag—a mask containing only one non-zero bit, positioned according to the priority of that process. The process with the highest priority corresponds to the least significant bit (position 0)<sup id="fnref:9"><a class="footnote-ref" href="#fn:9">9</a></sup>. With fewer than 8 user processes, the process map size is 8 bits. For 8 to 15 user processes, the size is 16 bits. For 16 or more user processes, the size is 32 bits.</li>
+<li><code>stack_item_t</code>&nbsp;– The type of a <strong>stack element</strong>. This depends on the target architecture. For example, on the 8-bit <strong>AVR</strong>, this type is defined as <code>uint8_t</code>; on the 16-bit <strong>MSP430</strong>, as <code>uint16_t</code>; and on 32-bit platforms, typically as <code>uint32_t</code>.</li>
+</ul>
+<h3 id="using-the-os">Using the OS<a class="headerlink" href="#using-the-os" title="Permanent link">🔗</a></h3>
+<p>As mentioned earlier, static mechanisms were used wherever possible to achieve maximum efficiency. This means that all functionality is determined at the compilation stage.</p>
+<p>This applies primarily to processes. Before using each process, its type must be defined<sup id="fnref:10"><a class="footnote-ref" href="#fn:10">10</a></sup>. This definition specifies the process type's name, its priority, and the amount of RAM allocated for its <a href="">stack</a>. For example:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr2</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">MainProc</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Here, a process with priority <code>pr2</code> and a stack size of 200 bytes is defined. This declaration might seem somewhat inconvenient due to its verbosity, because whenever you need to refer to the process type, you must write the full declaration—for example, when defining the process's execution function<sup id="fnref:11"><a class="footnote-ref" href="#fn:11">11</a></sup>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr2</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;::</span><span class="n">exec</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+</span></code></pre></div>
+<p>This is because the exact type is the expression
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr2</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span>
+</span></code></pre></div></p>
+<p>A similar situation will arise in other cases where you need to refer to the process type. To eliminate this inconvenience, you can use type aliases introduced via <code>typedef</code>. This is the recommended coding style: first define type aliases for the processes (preferably in a single place, such as a header file, to have an immediate overview of how many processes are in the project and what they are), and then declare the actual process objects in the appropriate source files. With this approach, the example above looks like this<sup id="fnref:12"><a class="footnote-ref" href="#fn:12">12</a></sup>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1">// In a header file</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr2</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TMainProc</span><span class="p">;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="p">...</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">TMainProc</span><span class="o">::</span><span class="n">exec</span><span class="p">();</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1">// In a source file</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">TMainProc</span><span class="w"> </span><span class="n">MainProc</span><span class="p">;</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">...</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">TMainProc</span><span class="o">::</span><span class="n">exec</span><span class="p">()</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">{</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="p">...</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">}</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="p">...</span>
+</span></code></pre></div>
+<p>There is nothing special about this sequence of actions—it is the standard way of describing a type alias and creating an object of that type, common in the C and C++ programming languages.</p>
+<div class="admonition warning">
+<p class="admonition-title"><strong>IMPORTANT NOTE</strong></p>
+<p>The number of processes must be specified when configuring the system. This number must exactly match the number of processes described in the project; otherwise, the system will not work. Please note that a special enumerated type, <code>TPriority</code>, is introduced for specifying priorities. It describes the allowable priority values<sup id="fnref:13"><a class="footnote-ref" href="#fn:13">13</a></sup>.</p>
+<p>Furthermore, the priorities of all processes must be consecutive, without gaps. For example, if there are 4 processes in the system, their priorities must be <code>pr0</code>, <code>pr1</code>, <code>pr2</code>, <code>pr3</code>. Duplicate priority values are also not allowed, meaning each process must have a unique priority value. For instance, if there are 4 user processes in the system (i.e., 5 processes in total, including the <code>IdleProc</code> system process), the priority values must be <code>pr0</code>, <code>pr1</code>, <code>pr2</code>, <code>pr3</code> (<code>prIDLE</code> for <code>IdleProc</code>), where <code>pr0</code> is the highest priority process and <code>pr3</code> is the lowest priority among the user processes. The absolute lowest priority process is <code>IdleProc</code>. This process always exists in the system and does not need to be described. It is this process that gains control when all user processes are in an inactive state.</p>
+<p>The compiler does not monitor gaps in process priority numbering or the uniqueness of process priority values. Adhering to the principle of separate compilation, there is no efficient way to automate configuration integrity checks using language features alone.</p>
+<p>Currently, there is a special tool that performs all the work of checking configuration integrity. The utility is called <strong>scmIC</strong> (IC&nbsp;– Integrity Checker) and can detect the vast majority of typical OS configuration errors.</p>
+</div>
+<p>As mentioned, it is convenient to place the definitions of process types in a header file to make any process easily visible in another compilation unit.</p>
+<p>An example of typical process usage can be found in "Listing 2. Defining Process Types in a Header File" and "Listing 3. Declaring Processes in a Source File and Starting the OS".</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="w"> </span><span class="mi">1</span><span class="w">    </span><span class="c1">//------------------------------------</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w"> </span><span class="mi">2</span><span class="w">    </span><span class="c1">//</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w"> </span><span class="mi">3</span><span class="w">    </span><span class="c1">//      Process types definition</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w"> </span><span class="mi">4</span><span class="w">    </span><span class="c1">//</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w"> </span><span class="mi">5</span><span class="w">    </span><span class="c1">//</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w"> </span><span class="mi">6</span><span class="w">    </span><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr0</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TUARTDrv</span><span class="p">;</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w"> </span><span class="mi">7</span><span class="w">    </span><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr1</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TLCDProc</span><span class="p">;</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w"> </span><span class="mi">8</span><span class="w">    </span><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr2</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TMainProc</span><span class="p">;</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w"> </span><span class="mi">9</span><span class="w">    </span><span class="k">typedef</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">process</span><span class="o">&lt;</span><span class="n">OS</span><span class="o">::</span><span class="n">pr3</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TFPGA_Proc</span><span class="p">;</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="mi">10</span><span class="w">    </span><span class="c1">//-------------------------------------</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 2. Defining Process Types in a Header File</p>
+</figcaption>
+</figure>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="w"> </span><span class="mi">1</span><span class="w">    </span><span class="c1">//-------------------------------------</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w"> </span><span class="mi">2</span><span class="w">    </span><span class="c1">//</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w"> </span><span class="mi">3</span><span class="w">    </span><span class="c1">//  Processes declarations</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w"> </span><span class="mi">4</span><span class="w">    </span><span class="c1">//</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w"> </span><span class="mi">5</span><span class="w">    </span><span class="c1">//</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w"> </span><span class="mi">6</span><span class="w">    </span><span class="n">TUartDrv</span><span class="w">   </span><span class="n">UartDrv</span><span class="p">;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w"> </span><span class="mi">7</span><span class="w">    </span><span class="n">TLCDProc</span><span class="w">   </span><span class="n">LCDProc</span><span class="p">;</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w"> </span><span class="mi">8</span><span class="w">    </span><span class="n">TMainProc</span><span class="w">  </span><span class="n">MainProc</span><span class="p">;</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w"> </span><span class="mi">9</span><span class="w">    </span><span class="n">TFPGAProc</span><span class="w">  </span><span class="n">FPGAProc</span><span class="p">;</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="mi">10</span><span class="w">    </span><span class="c1">//-------------------------------------</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="mi">11</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="mi">12</span><span class="w">    </span><span class="c1">//-------------------------------------</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="mi">13</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="mi">14</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="mi">15</span><span class="w">        </span><span class="p">...</span><span class="w"> </span><span class="c1">// system timer and other stuff initialization</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="mi">16</span><span class="w">        </span><span class="n">OS</span><span class="o">::</span><span class="n">run</span><span class="p">();</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="mi">17</span><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="mi">18</span><span class="w">    </span><span class="c1">//-------------------------------------</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 3. Declaring Processes in a Source File and Starting the OS</p>
+</figcaption>
+</figure>
+<p>As mentioned earlier, each process has an execution function. When using the scheme described above, the process execution function is named <code>exec</code> and looks as shown in "Listing 1. Process Execution Function".</p>
+<p>Configuration information is specified in a special header file, <code>scmRTOS_config.h</code>. The list and values<sup id="fnref:14"><a class="footnote-ref" href="#fn:14">14</a></sup> of the configuration macros are shown in "Table 1. Configuration Macros".</p>
+<figure>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Value</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_PROCESS_COUNT</code></td>
+<td style="text-align: left;">n</td>
+<td style="text-align: left;">Number of processes in the system</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_SYSTIMER_NEST_INTS_ENABLE</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Enables nested interrupts within the system timer interrupt handler<sup id="fnref:15"><a class="footnote-ref" href="#fn:15">15</a></sup></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_SYSTEM_TICKS_ENABLE</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Enables the use of the system timer tick counter</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_SYSTIMER_HOOK_ENABLE</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Enables the call to the <code>system_timer_user_hook()</code> function within the system timer interrupt handler. In this case, the specified function must be defined in the user code</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_IDLE_HOOK_ENABLE</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Enables the call to the <code>idle_process_user_hook()</code> function within the system <code>IdleProc</code> process. In this case, the specified function must be defined in the user code</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_ISRW_TYPE</code></td>
+<td style="text-align: left;"><code>TISRW</code><br><code>TISRW_SS</code></td>
+<td style="text-align: left;">Selects the type of wrapper class for the system timer interrupt handler — regular or with a switch to a separate interrupt stack. The suffix <code>_SS</code> stands for Separate Stack</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_CONTEXT_SWITCH_SCHEME</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Defines the method for context switching (transfer of control)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_PRIORITY_ORDER</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Defines the priority order in the process map. A value of 0 corresponds to the case where the highest priority process maps to the least significant bit in the process map (<code>TProcessMap</code>). A value of 1 corresponds to the case where the highest priority process maps to the most significant (relevant) bit in the process map</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_IDLE_PROCESS_STACK_SIZE</code></td>
+<td style="text-align: left;">N</td>
+<td style="text-align: left;">Defines the stack size for the <code>IdleProc</code> background process</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_CONTEXT_SWITCH_USER_HOOK_ENABLE</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Enables the call to the user hook <code>context_switch_user_hook()</code> during context switching. In this case, the function must be defined in the user code</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_DEBUG_ENABLE</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Enables debugging facilities</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>scmRTOS_PROCESS_RESTART_ENABLE</code></td>
+<td style="text-align: left;">0/1</td>
+<td style="text-align: left;">Allows interrupting the execution of any process at an arbitrary moment and restarting that process</td>
+</tr>
+</tbody>
+</table>
+<figcaption>
+<p>Table 1. Configuration Macros</p>
+</figcaption>
+</figure>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>This refers to the standard memory manager provided with development tools. There are situations where a program needs to store data between function calls (i.e., using automatic storage duration—on the stack or in CPU registers—is not suitable), and the total amount of such data is unknown at compile time—its appearance and lifetime are determined by events occurring during program execution. For storing such data, the heap is the most appropriate place. Managing this heap is typically the responsibility of a memory manager. Therefore, some applications cannot do without such a component. However, given the resource consumption of a standard memory manager, its use often becomes impractical. In these situations, a specialized memory manager, designed specifically to meet the application's requirements optimally, is frequently employed. Considering the above, it becomes clear that creating a universal memory manager equally well-suited to the diverse needs of various projects is hardly realistic. This is why <strong>scmRTOS</strong> does not include a built-in memory manager.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>In this case, no other process should "wake up" this sleeping process before it exits, otherwise undefined behavior will occur and the system will likely crash. The only safe action that can be applied to a process in this situation is to terminate it (with the possibility of restarting it from the beginning later). See <a href="../processes/#process-restart">Process Restart</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>Notably, the ring buffer class/template.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>The assembly file extension for the target processor.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:5">
+<p>Almost all OS classes are declared as friends (<code>friend</code>) of each other. This is done to provide access for the OS components to the internal representations of other components without exposing the interface externally, thereby preventing user code from directly using internal OS variables and mechanisms, which enhances usage safety.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:6">
+<p>For example, accessing OS kernel variables or the internal state of inter-process communication facilities.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:7">
+<p>In the current implementation of <strong>scmRTOS</strong>, this is achieved by disabling interrupts globally.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+<li id="fn:8">
+<p>Upon exiting the block, the destructor is automatically called, which restores the state that existed before entering the critical section. This method eliminates the possibility of "forgetting" to re-enable interrupts when exiting the critical section.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 8 in the text">&#8617;</a></p>
+</li>
+<li id="fn:9">
+<p>This order is the default. If <code>scmRTOS_PRIORITY_ORDER</code> is defined as 1, the order of bits in the process map is reversed—i.e., the most significant bit corresponds to the highest priority process, and the least significant bit corresponds to the lowest priority process. The reversed priority order can be useful for processors with hardware support for finding the first non-zero bit in a binary word—for example, for processors of the <strong>Blackfin</strong> family.&#160;<a class="footnote-backref" href="#fnref:9" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+</li>
+<li id="fn:10">
+<p>Each process is an object of a distinct type (class), derived from the common base class <code>TBaseProcess</code>.&#160;<a class="footnote-backref" href="#fnref:10" title="Jump back to footnote 10 in the text">&#8617;</a></p>
+</li>
+<li id="fn:11">
+<p>The execution function of a specific process is technically a full specialization of the member function template <code>OS::process::exec()</code>. Therefore, its definition uses the syntax for defining a specialization: <code>template&lt;&gt;</code>.&#160;<a class="footnote-backref" href="#fnref:11" title="Jump back to footnote 11 in the text">&#8617;</a></p>
+</li>
+<li id="fn:12">
+<p>It is recommended to declare the prototype for the specialization of the process's execution function before the first use of the template instance—this allows the compiler to see that a full specialization of the function exists for this instance, so there is no need to attempt generating the general implementation of that template function. In some cases, this helps avoid compilation errors.&#160;<a class="footnote-backref" href="#fnref:12" title="Jump back to footnote 12 in the text">&#8617;</a></p>
+</li>
+<li id="fn:13">
+<p>This is done to enhance safety—you cannot simply specify any integer value; only the values described in <code>TPriority</code> are valid. The values described in <code>TPriority</code> are linked to the number of processes specified by the configuration macro <code>scmRTOS_PROCESS_COUNT</code>. Thus, you can only choose from a limited set. Process priority values look like: <code>pr0</code>, <code>pr1</code>, etc., where the number denotes the priority level. The system process <code>IdleProc</code> has a separate priority designation, <code>prIDLE</code>.&#160;<a class="footnote-backref" href="#fnref:13" title="Jump back to footnote 13 in the text">&#8617;</a></p>
+</li>
+<li id="fn:14">
+<p>The table provides example values. In each project, values are set individually based on the project's requirements.&#160;<a class="footnote-backref" href="#fnref:14" title="Jump back to footnote 14 in the text">&#8617;</a></p>
+</li>
+<li id="fn:15">
+<p>If the port supports only one variant, the corresponding macro value is defined within the port itself. The same applies to all other macros.&#160;<a class="footnote-backref" href="#fnref:15" title="Jump back to footnote 15 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../.." class="btn btn-neutral float-left" title="Instead of a preface"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../kernel/" class="btn btn-neutral float-right" title="Kernel">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../.." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../kernel/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/mathjax.js"></script>
+      <script src="../../js/mathjax/tex-mml-chtml.js"></script>
+      <script src="../../js/wavedrom.min.js"></script>
+      <script src="../../js/wavedrom_loader.js"></script>
+      <script src="../../js/wavedrom.unpkg.js"></script>
+      <script src="../../js/wavedrom_skin_default.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+</script></body>
+</html>

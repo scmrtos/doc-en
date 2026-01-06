@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Kernel - scmRTOS</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Kernel";
+        var mkdocs_page_input_path = "src/kernel.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+ <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> scmRTOS
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Intro</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../..">Instead of a preface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">RTOS Components</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Kernel</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#general-information">General Information</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#tkernel-composition-and-operation">TKernel. Composition and Operation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#composition">Composition</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#process-setup">Process Setup</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#control-transfer">Control Transfer</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#the-scheduler">The Scheduler</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#scheduler-with-direct-control-transfer">Scheduler with Direct Control Transfer</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#scheduler-with-software-interrupt">Scheduler with Software Interrupt</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pros-and-cons-of-control-transfer-methods">Pros and Cons of Control Transfer Methods</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#direct-control-transfer">Direct Control Transfer</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#software-interrupt-based-control-transfer">Software Interrupt-Based Control Transfer</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#conclusions">Conclusions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#support-for-inter-process-communication">Support for Inter-Process Communication</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#interrupts">Interrupts</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#usage-peculiarities-with-an-rtos-and-implementation">Usage Peculiarities with an RTOS and Implementation</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#separate-interrupt-stack-and-nested-interrupts">Separate Interrupt Stack and Nested Interrupts</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-timer">System Timer</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#tkernelagent-and-extensions">TKernelAgent and Extensions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#kernel-agent">Kernel Agent</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#extensions">Extensions</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipcs/">Interprocess Communications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ports/">Ports</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendix</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">Debug</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Performance Profiling</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">scmRTOS</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">RTOS Components</li>
+      <li class="breadcrumb-item active">Kernel</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="os-kernel">OS Kernel<a class="headerlink" href="#os-kernel" title="Permanent link">🔗</a></h1>
+<hr />
+<h2 id="general-information">General Information<a class="headerlink" href="#general-information" title="Permanent link">🔗</a></h2>
+<p>The operating system kernel performs the following functions:</p>
+<ul>
+<li>Process organization and management.</li>
+<li>Scheduling at both the process and interrupt levels.</li>
+<li>Support for inter-process communication.</li>
+<li>System time support (system timer).</li>
+<li>Support for extensions.</li>
+</ul>
+<p>The core of the system is the <code>TKernel</code> class, which contains all the necessary set of functions and data. For obvious reasons, only a single instance of this class exists. Almost all of its internal representation is private. To allow access from certain parts of the OS that require its resources, the C++ "friend" mechanism is used — functions and classes granted such access are declared with the <code>friend</code> keyword.</p>
+<p>It is important to note that in this context, the term "kernel" refers not only to the <code>TKernel</code> object but also to the functional extension facility implemented as the <code>TKernelAgent</code> class. This class was specifically introduced into the operating system to provide a base for building extensions. Looking ahead, it can be noted that in <strong>scmRTOS</strong>, all inter-process communication facilities are implemented based on such an extension. The <code>TKernelAgent</code> class is declared as a <code>friend</code> of the <code>TKernel</code> class and contains a minimal necessary set of <code>protected</code> functions to provide its descendants with access to kernel resources. Extensions are built by inheriting from the <code>TKernelAgent</code> class. For more details, see <a href="./#kernel-agent">TKernelAgent and Extensions</a>.</p>
+<hr />
+<h2 id="tkernel-composition-and-operation">TKernel. Composition and Operation<a class="headerlink" href="#tkernel-composition-and-operation" title="Permanent link">🔗</a></h2>
+<h3 id="composition">Composition<a class="headerlink" href="#composition" title="Permanent link">🔗</a></h3>
+<p>The <code>TKernel</code> class contains the following data members<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>:</p>
+<ul>
+<li><code>CurProcPriority</code>&nbsp;– A variable containing the priority number of the currently active process. Serves for quick access to the current process's resources and for manipulating the process's status (both in relation to the kernel and to IPC facilities)<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>.</li>
+<li><code>ReadyProcessMap</code>&nbsp;– A map of processes ready for execution. Contains tags of processes ready to run: each bit of this variable corresponds to a specific process. A logical <code>1</code> indicates that the process is ready for execution<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>, a logical <code>0</code> indicates that it is not ready.</li>
+<li><code>ProcessTable</code>&nbsp;– An array of pointers to processes registered in the system.</li>
+<li><code>ISR_NestCount</code>&nbsp;– A counter for interrupt entries. It is incremented on each entry and decremented on each exit.</li>
+<li><code>SysTickCount</code>&nbsp;– A counter for system timer ticks (overflows). Present only if this feature is enabled (via the corresponding macro in the configuration file).</li>
+<li><code>SchedProcPriority</code>*&nbsp;– A variable for storing the priority value of the process scheduled to receive control.</li>
+</ul>
+<h3 id="process-setup">Process Setup<a class="headerlink" href="#process-setup" title="Permanent link">🔗</a></h3>
+<p>The process setup essentially involves registering created processes. In the constructor of each process, the kernel function <code>register_process(TBaseProcess *)</code> is called. This function places the pointer to the process (passed as an argument) into the system's <code>ProcessTable</code> (see below). The position of this pointer in the table is determined according to the process's priority, which effectively serves as an index for accessing the table. See "Listing 1. Process Registration Function" for the code.</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="mi">1</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">TKernel</span><span class="o">::</span><span class="n">register_process</span><span class="p">(</span><span class="n">OS</span><span class="o">::</span><span class="n">TBaseProcess</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="mi">2</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="mi">3</span><span class="w">        </span><span class="n">ProcessTable</span><span class="p">[</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">Priority</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="mi">4</span><span class="w">    </span><span class="p">}</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 1. Process Registration Function</p>
+</figcaption>
+</figure>
+<p>The next system function is the actual OS startup. See "Listing 2. OS Startup Function" for the code.</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="mi">1</span><span class="w">    </span><span class="n">INLINE</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">run</span><span class="p">()</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="mi">2</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="mi">3</span><span class="w">        </span><span class="n">stack_item_t</span><span class="w"> </span><span class="o">*</span><span class="n">sp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Kernel</span><span class="p">.</span><span class="n">ProcessTable</span><span class="p">[</span><span class="n">pr0</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">StackPointer</span><span class="p">;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="mi">4</span><span class="w">        </span><span class="n">os_start</span><span class="p">(</span><span class="n">sp</span><span class="p">);</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="mi">5</span><span class="w">    </span><span class="p">}</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 2. OS Startup Function</p>
+</figcaption>
+</figure>
+<p>The actions are quite simple: the stack pointer of the highest-priority process is retrieved from the process table (3), and the system is actually started (4) by calling the low-level function <code>os_start()</code> with the retrieved stack pointer as an argument.</p>
+<p>From this moment, the OS begins operating in its primary mode, i.e., transferring control from process to process according to their priorities, events, and the user program.</p>
+<h3 id="control-transfer">Control Transfer<a class="headerlink" href="#control-transfer" title="Permanent link">🔗</a></h3>
+<p>Control can be transferred in two ways:</p>
+<ul>
+<li>A process voluntarily relinquishes control when it has nothing more to do (for the moment), or as a result of its operation, it needs to engage in inter-process communication (e.g., acquire a mutex semaphore (<code>OS::TMutex</code>) or signal an event flag (<code>OS::TEventFlag</code>)). This informs the kernel, which must then perform process rescheduling if necessary.</li>
+<li>Control is taken from a process by the kernel as a result of an interrupt triggered by some event. If a higher-priority process was waiting for this event, control will be given to that process. The interrupted process will wait until the higher-priority one completes its task and relinquishes control<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>.</li>
+</ul>
+<p>In the first case, process rescheduling is performed <strong>synchronously</strong> relative to the program execution flow — within the scheduler code. In the second case, rescheduling occurs <strong>asynchronously</strong> upon the occurrence of an event.</p>
+<p>The actual control transfer can be organized in several ways. One method is <strong>direct control transfer</strong> by calling a low-level<sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup> context switch function from the scheduler<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>. Another method is control transfer by <strong>activating a special software interrupt</strong>, where the context switch takes place. <strong>scmRTOS</strong> supports both methods. Each approach has its own advantages and disadvantages, which will be discussed in detail later.</p>
+<h3 id="the-scheduler">The Scheduler<a class="headerlink" href="#the-scheduler" title="Permanent link">🔗</a></h3>
+<p>The scheduler's source code is implemented in the <code>sched()</code> function — see "Listing 3. The Scheduler".</p>
+<p>Two variants are present here — one for the case of direct control transfer (<code>scmRTOS_CONTEXT_SWITCH_SCHEME == 0</code>), and another for control transfer using a software interrupt.</p>
+<p>It should be noted that invoking the scheduler from the main program level is done via the <code>scheduler()</code> function. This function calls the actual scheduler (<code>sched()</code>) only if the call is not made from within an interrupt:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">INLINE</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">scheduler</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="n">ISR_NestCount</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span><span class="w"> </span><span class="k">else</span><span class="w">  </span><span class="n">sched</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+</span></code></pre></div>
+<p>With proper use of the OS facilities, this situation should not occur, because invoking the scheduler from interrupt level should be done through specialized versions of the corresponding functions (their names have the <code>_isr</code> suffix), which are specifically designed for use within interrupts.</p>
+<p>For example, if it is necessary to signal an event flag from within an interrupt, the user must use the <code>signal_isr()</code><sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup> function instead of <code>signal()</code>. However, if the latter is used by mistake, no fatal runtime error will occur; the scheduler simply will not be invoked. Consequently, despite an event possibly occurring within the interrupt, a control transfer will not happen, even if its turn has arrived.</p>
+<p>The control transfer will only occur during the next call to reschedule, which happens when the destructor of the <code>TISRW</code>/<code>TISRW_SS</code> object is executed. Thus, the check in the <code>scheduler()</code> function serves as protection against program crashes due to careless use of services, as well as when using services for which corresponding <code>_isr</code> functions are not provided — for example, <code>channel::push()</code>.</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="mo">01</span><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">TKernel</span><span class="o">::</span><span class="n">update_sched_prio</span><span class="p">()</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="mo">02</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="mo">03</span><span class="w">        </span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">NextPrty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">highest_priority</span><span class="p">(</span><span class="n">ReadyProcessMap</span><span class="p">);</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="mo">04</span><span class="w">    </span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="mo">05</span><span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">NextPrty</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">CurProcPriority</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="mo">06</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="mo">07</span><span class="w">            </span><span class="n">SchedProcPriority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NextPrty</span><span class="p">;</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="mi">08</span><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="mi">09</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="mi">10</span><span class="w">    </span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="mi">11</span><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="mi">12</span><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="mi">13</span><span class="w">    </span><span class="err">#</span><span class="k">if</span><span class="w"> </span><span class="n">scmRTOS_CONTEXT_SWITCH_SCHEME</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="mi">14</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">TKernel</span><span class="o">::</span><span class="n">sched</span><span class="p">()</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="mi">15</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="mi">16</span><span class="w">        </span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">NextPrty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">highest_priority</span><span class="p">(</span><span class="n">ReadyProcessMap</span><span class="p">);</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="mi">17</span><span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">NextPrty</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">CurProcPriority</span><span class="p">)</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="mi">18</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="mi">19</span><span class="w">        </span><span class="err">#</span><span class="k">if</span><span class="w"> </span><span class="n">scmRTOS_CONTEXT_SWITCH_USER_HOOK_ENABLE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="mi">20</span><span class="w">            </span><span class="n">context_switch_user_hook</span><span class="p">();</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="mi">21</span><span class="w">        </span><span class="err">#</span><span class="n">endif</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="mi">22</span><span class="w">    </span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="mi">23</span><span class="w">            </span><span class="n">stack_item_t</span><span class="o">*</span><span class="w">  </span><span class="n">Next_SP</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">ProcessTable</span><span class="p">[</span><span class="n">NextPrty</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">StackPointer</span><span class="p">;</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="mi">24</span><span class="w">            </span><span class="n">stack_item_t</span><span class="o">**</span><span class="w"> </span><span class="n">Curr_SP_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="p">(</span><span class="n">ProcessTable</span><span class="p">[</span><span class="n">CurProcPriority</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">StackPointer</span><span class="p">);</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="mi">25</span><span class="w">            </span><span class="n">CurProcPriority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NextPrty</span><span class="p">;</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="mi">26</span><span class="w">            </span><span class="n">os_context_switcher</span><span class="p">(</span><span class="n">Curr_SP_addr</span><span class="p">,</span><span class="w"> </span><span class="n">Next_SP</span><span class="p">);</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="mi">27</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="mi">28</span><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="mi">29</span><span class="w">    </span><span class="err">#</span><span class="k">else</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="mi">30</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">TKernel</span><span class="o">::</span><span class="n">sched</span><span class="p">()</span>
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="mi">31</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="mi">32</span><span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">update_sched_prio</span><span class="p">())</span>
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a><span class="mi">33</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a><span class="mi">34</span><span class="w">            </span><span class="n">raise_context_switch</span><span class="p">();</span>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a><span class="mi">35</span><span class="w">            </span><span class="k">do</span>
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a><span class="mi">36</span><span class="w">            </span><span class="p">{</span>
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a><span class="mi">37</span><span class="w">                </span><span class="n">enable_context_switch</span><span class="p">();</span>
+</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a><span class="mi">38</span><span class="w">                </span><span class="n">DUMMY_INSTR</span><span class="p">();</span>
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a><span class="mi">39</span><span class="w">                </span><span class="n">disable_context_switch</span><span class="p">();</span>
+</span><span id="__span-3-41"><a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a><span class="mi">40</span><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-3-42"><a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a><span class="mi">41</span><span class="w">            </span><span class="k">while</span><span class="p">(</span><span class="n">CurProcPriority</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">SchedProcPriority</span><span class="p">);</span><span class="w"> </span><span class="c1">// until context switch done</span>
+</span><span id="__span-3-43"><a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a><span class="mi">42</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-3-44"><a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a><span class="mi">43</span><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-45"><a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a><span class="mi">44</span><span class="w">    </span><span class="err">#</span><span class="n">endif</span><span class="w"> </span><span class="c1">// scmRTOS_CONTEXT_SWITCH_SCHEME</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 3. The Scheduler</p>
+</figcaption>
+</figure>
+<h4 id="scheduler-with-direct-control-transfer">Scheduler with Direct Control Transfer<a class="headerlink" href="#scheduler-with-direct-control-transfer" title="Permanent link">🔗</a></h4>
+<p>All actions performed inside the scheduler must be non-interruptible; therefore, the code of this function executes within a critical section. However, since the scheduler is always called with interrupts disabled, using a critical section in its code is unnecessary.</p>
+<p>The first step is to calculate the priority of the highest-priority process ready for execution (by analyzing the <code>ReadyProcessMap</code>&nbsp;– the map of processes ready to run).</p>
+<p>Next, the found priority is compared with the current one. If they match, the current process is indeed the highest-priority one ready to run, and no control transfer to another process is required; the execution flow remains within the current process.</p>
+<p>If the found priority does not match the current one, it means a process with a higher priority than the current one has become ready to run, and control must be transferred to it. This is achieved by switching process contexts. The context of the current process is saved onto its stack, and the context of the next process is restored from its stack. These actions are platform-dependent and are performed in the low-level (assembly-implemented) function <code>os_context_switcher()</code>, which is called from the scheduler (26). This function receives two arguments:</p>
+<ul>
+<li>The address of the current process's stack pointer, where the pointer itself will be stored after saving the current process's context (24).</li>
+<li>The stack pointer of the next process (23).</li>
+</ul>
+<p>When implementing the low-level context switch function, attention must be paid to the calling conventions and parameter passing for the specific platform and compiler.</p>
+<h4 id="scheduler-with-software-interrupt">Scheduler with Software Interrupt<a class="headerlink" href="#scheduler-with-software-interrupt" title="Permanent link">🔗</a></h4>
+<p>In this variant, the scheduler differs significantly from the one described above. The main difference is that the actual context switch does not occur via a direct call to the context switcher function but by activating a special interrupt, within which the context switch takes place. This method harbors several nuances and requires special measures to prevent disruption of the system's integrity.</p>
+<p>The primary difficulty in implementing this control transfer method is that the scheduler code itself and the software interrupt handler code are not strictly continuous or "atomic"; an interrupt can occur between them, which could also initiate rescheduling. This would cause a kind of "overlap" of the current rescheduling results and disrupt the integrity of the control transfer process. To avoid this conflict, the "rescheduling-control transfer" process is split into two "atomic" operations that can be safely separated from each other.</p>
+<p>The first operation is, as before, calculating the priority of the highest-priority ready process — calling the <code>update_sched_prio()</code> function (01) — and checking the need for rescheduling (32). If such a need exists, the priority value of the next process is recorded in the <code>SchedProcPriority</code> variable (07), and the context switch software interrupt is activated (34). The program then enters a loop waiting for the context switch (35).</p>
+<p>A rather subtle point is hidden here. One might ask, why not simply implement the enabled-interrupts zone as a pair of dummy instructions (to give the processor hardware time to actually trigger the interrupt)? Such an implementation contains a subtle error, which consists of the following.</p>
+<p>If, at the moment when context switching is enabled (which in this OS version is implemented by globally enabling interrupts (37)), one or several other interrupts besides the software interrupt were pending, and the priority of some of them is higher than that of the software interrupt, then control will naturally be transferred to the handler of that higher-priority interrupt. Upon its completion, a return will be made to the interrupted program. Now, in the main program (i.e., inside the scheduler function), the processor may execute one or several instructions<sup id="fnref:8"><a class="footnote-ref" href="#fn:8">8</a></sup> before the next interrupt can be activated.</p>
+<p>In this case, the program might reach the code that disables context switching, which would lead to interrupts being globally disabled, and the software interrupt, where the context switch is performed, would not be executed. This means the execution flow would remain in the current process, while it should have been transferred to the system (and other processes) until an event that the current process is waiting for occurs. This is nothing other than a breach of system integrity and can lead to a wide variety of difficult-to-predict negative consequences.</p>
+<p>Obviously, such a situation must not arise. Therefore, instead of a few dummy instructions in the enabled-interrupts zone, a loop waiting for the context switch is used. That is, no matter how many interrupts are queued, until an actual context switch occurs, the program's execution flow will not proceed beyond this loop.</p>
+<p>For the described mechanism to work, a criterion is needed to determine that rescheduling has indeed occurred. Such a criterion can be the equality of the kernel variables <code>CurProcPriority</code> and <code>SchedProcPriority</code>. These variables become equal to each other (i.e., the value of the current priority becomes equal to the scheduled value) only after the context switch has been performed.</p>
+<p>As can be seen, there are no updates here to variables containing stack pointers or the current priority value. All these actions are performed later during the actual context switch by calling a special kernel function <code>os_context_switch_hook()</code>.</p>
+<p>One might wonder: why such complexity? To answer this question, consider a scenario: suppose, in the case of context switching via a software interrupt, the scheduler implementation remained the same as in the case of a direct call to the context switcher. But the call:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">os_context_switcher</span><span class="p">(</span><span class="n">Curr_SP_addr</span><span class="p">,</span><span class="w"> </span><span class="n">Next_SP</span><span class="p">);</span>
+</span></code></pre></div>
+<p>is replaced by<sup id="fnref:9"><a class="footnote-ref" href="#fn:9">9</a></sup>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">raise_context_switch</span><span class="p">();</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="o">&lt;</span><span class="n">wait_for_context_switch_done</span><span class="o">&gt;</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Now, consider a situation where, at the moment interrupts are enabled, one or several other interrupts are pending, and at least one of them has a higher priority than the software interrupt for context switching. Furthermore, in the handler of this higher-priority pending interrupt, a service function (an inter-process communication facility) is called. What would happen in this case?</p>
+<p>In this case, the scheduler would be called again, and another process rescheduling would occur. However, since the previous rescheduling was not completed—i.e., the processes did not actually switch, and contexts were not physically saved and restored—the new rescheduling would simply overwrite the variables containing the pointers to the current and next processes.</p>
+<p>Moreover, when determining the need for rescheduling, the value of <code>CurProcPriority</code> would be used, which is actually incorrect because this value represents the priority of the next process scheduled during the previous scheduler call. In short, a "overlap" of scheduling operations would occur, disrupting the integrity of the system's operation.</p>
+<p>Therefore, it is crucial that the actual update of the <code>CurProcPriority</code> value and the switching of process contexts are "atomic"—indivisible and not interrupted by any other code related to process scheduling. In the variant with direct context switcher call, this rule is inherently satisfied—the entire scheduler's work happens within a critical section, and the context switcher is called directly from there.</p>
+<p>In the software interrupt variant, scheduling and context switching can be "separated" in time. Therefore, the actual context switch and the change of the current priority occur directly during the execution of the software interrupt handler<sup id="fnref:10"><a class="footnote-ref" href="#fn:10">10</a></sup>. Immediately after saving the context of the current process, the <code>os_context_switch_hook()</code> function is called (where the <code>CurProcPriority</code> value is directly updated). Also, the stack pointer of the current process is passed to <code>os_context_switch_hook()</code>, where it is saved in the current process object, and the stack pointer of the next process, required for restoring its context and subsequently transferring control to it, is retrieved and returned from the function.</p>
+<p>To avoid degrading performance in interrupt handlers, there is a special lightweight, inline version of the scheduler used by some member functions of service objects optimized for use in ISRs. See "Listing 4. Scheduler Variant Optimized for Use in ISR" for the code of this scheduler version.</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="mo">01</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">TKernel</span><span class="o">::</span><span class="n">sched_isr</span><span class="p">()</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="mo">02</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="mo">03</span><span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">update_sched_prio</span><span class="p">())</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="mo">04</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="mo">05</span><span class="w">            </span><span class="n">raise_context_switch</span><span class="p">();</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="mo">06</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="mo">07</span><span class="w">    </span><span class="p">}</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 4. Scheduler Variant Optimized for Use in ISR</p>
+</figcaption>
+</figure>
+<p>When selecting the context switch interrupt handler, preference should be given to the one with the lowest priority (in the case of a priority interrupt controller). This helps avoid unnecessary rescheduling and context switches when several interrupts occur in succession.</p>
+<h3 id="pros-and-cons-of-control-transfer-methods">Pros and Cons of Control Transfer Methods<a class="headerlink" href="#pros-and-cons-of-control-transfer-methods" title="Permanent link">🔗</a></h3>
+<p>Both methods have their advantages and disadvantages. The advantages of one control transfer method are the disadvantages of the other, and vice versa.</p>
+<h4 id="direct-control-transfer">Direct Control Transfer<a class="headerlink" href="#direct-control-transfer" title="Permanent link">🔗</a></h4>
+<p>The main advantage of direct control transfer is that implementing this variant does not require a dedicated software interrupt in the target MCU—not all MCUs have such hardware capability. A second minor advantage is slightly higher performance compared to the software interrupt variant, as the latter incurs additional overhead for activating the context switch interrupt handler, the loop waiting for context switch, and the call to <code>os_context_switch_hook()</code>.</p>
+<p>The direct control transfer variant has a serious drawback—when the scheduler is called from an interrupt handler, the compiler is forced to save the "local context" (the processor's scratch registers) due to the call to a non-inline context switch function. This overhead can be quite significant compared to the rest of the ISR code. The negative aspect here is that saving these registers may be completely unnecessary—since the function<sup id="fnref:11"><a class="footnote-ref" href="#fn:11">11</a></sup> that necessitates their saving does not use these registers. Therefore, if there are no more calls to non-inline functions, the code for saving and restoring this register group becomes redundant.</p>
+<h4 id="software-interrupt-based-control-transfer">Software Interrupt-Based Control Transfer<a class="headerlink" href="#software-interrupt-based-control-transfer" title="Permanent link">🔗</a></h4>
+<p>This variant is free from the drawback described above. Because the ISR itself executes in the usual manner and no rescheduling is performed from within it, the saving of the "local context" is also not performed. This significantly reduces overhead and improves system performance. To avoid spoiling this advantage by calling a non-inline member function of an inter-process communication service object, it is recommended to use special, lightweight, inline versions of such functions—see the <a href="../ipcs/">Inter-Process Communication Facilities</a> section for more details.</p>
+<p>The main disadvantage of control transfer using a software interrupt is that not all hardware platforms support a software interrupt. In such cases, one of the unused hardware interrupts can be used as this software interrupt. Unfortunately, this introduces a lack of universality—it is not known in advance whether a particular hardware interrupt will be required in a given project. Therefore, if the processor does not specifically provide a suitable interrupt, the choice of the context switch interrupt is delegated (from the port level) to the project level, and the user must write the corresponding code themselves<sup id="fnref:12"><a class="footnote-ref" href="#fn:12">12</a></sup>.</p>
+<p>When using control transfer via a software interrupt, the expression "The kernel takes control away from the processes" fully reflects the situation.</p>
+<h4 id="conclusions">Conclusions<a class="headerlink" href="#conclusions" title="Permanent link">🔗</a></h4>
+<p>Considering the above analysis of the advantages and disadvantages of both control transfer methods, the general recommendation is as follows: if the target platform provides a suitable interrupt for implementing context switching, it makes sense to use this variant, especially if the size of the "local context" is substantial.</p>
+<p>Using direct control transfer is justified when using a software interrupt is practically impossible—for example, when the target platform does not support such an interrupt, or using a hardware interrupt as a software one is not feasible for various reasons. It may also be chosen if performance characteristics with this transfer method are better due to lower overhead for organizing context switches, and the saving/restoring of the "local context" does not incur significant overhead because of its small size<sup id="fnref:13"><a class="footnote-ref" href="#fn:13">13</a></sup>.</p>
+<h3 id="support-for-inter-process-communication">Support for Inter-Process Communication<a class="headerlink" href="#support-for-inter-process-communication" title="Permanent link">🔗</a></h3>
+<p>Support for inter-process communication (IPC) boils down to providing a set of functions for monitoring process states and granting IPC facilities access to the rescheduling mechanisms of the OS. For more details, see the <a href="../ipcs/">Inter-Process Communication Facilities</a> section.</p>
+<h3 id="interrupts">Interrupts<a class="headerlink" href="#interrupts" title="Permanent link">🔗</a></h3>
+<h4 id="usage-peculiarities-with-an-rtos-and-implementation">Usage Peculiarities with an RTOS and Implementation<a class="headerlink" href="#usage-peculiarities-with-an-rtos-and-implementation" title="Permanent link">🔗</a></h4>
+<p>An occurred interrupt can be the source of an event that needs to be handled by a specific process. Therefore, to minimize (and make deterministic) the response time to an event, process rescheduling and control transfer to the highest-priority ready process are used when necessary.</p>
+<p>The code of any interrupt handler that uses IPC services must call the <code>isr_enter()</code> function upon entry, which increments the <code>ISR_NestCount</code> variable, and call the <code>isr_exit()</code> function upon exit. The latter decrements <code>ISR_NestCount</code> and uses its value to determine the interrupt nesting level (in case of nested interrupts). When <code>ISR_NestCount</code> becomes 0, it indicates a return from the interrupt handler to the main program. At this point, <code>isr_exit()</code> performs process rescheduling (if needed) by calling the interrupt-level scheduler.</p>
+<p>To simplify usage and ensure portability, the code executed upon entry and exit of interrupt handlers is placed in the constructor and destructor, respectively, of a special wrapper class—<code>TISRW</code>. An object of this type must be used within the interrupt handler<sup id="fnref:14"><a class="footnote-ref" href="#fn:14">14</a></sup>. It is sufficient to create an object of this type in the interrupt handler code; the compiler will handle the rest. It is important that the declaration of this object comes before the first use of any service functions.</p>
+<p>It should be noted that if a non-inline function is called from within an interrupt handler, the compiler will save the "local context"—the scratch<sup id="fnref:15"><a class="footnote-ref" href="#fn:15">15</a></sup> registers<sup id="fnref:16"><a class="footnote-ref" href="#fn:16">16</a></sup>. Therefore, it is desirable to avoid calls to non-inline functions from interrupt handlers, as even partial context saving degrades both speed and code size<sup id="fnref:17"><a class="footnote-ref" href="#fn:17">17</a></sup>. In light of this, the current version of <strong>scmRTOS</strong> includes special additional lightweight functions for some IPC objects intended for use within interrupt handlers. These functions are inline and use a lightweight version of the scheduler, which is also inline. For more details, see the <a href="../ipcs/">Inter-Process Communication Facilities</a> section.</p>
+<h4 id="separate-interrupt-stack-and-nested-interrupts">Separate Interrupt Stack and Nested Interrupts<a class="headerlink" href="#separate-interrupt-stack-and-nested-interrupts" title="Permanent link">🔗</a></h4>
+<p>Another aspect of using a preemptive RTOS is related to interrupts. As known, when an interrupt occurs and control is transferred to its handler, the program uses the stack of the interrupted process for its execution. This stack must have a size sufficient to meet the needs of both the process itself and any interrupt handler. Moreover, it must account for the combined worst-case scenario—for instance, when process execution occupies the peak stack space, and an interrupt occurs whose handler also consumes part of the stack. The stack size must be such that overflow does not occur even in this case.</p>
+<p>Obviously, the above circumstances concern all processes in the system. If interrupt handlers consume a significant amount of stack space, the stack sizes of all processes must be increased by a certain amount. This leads to increased memory overhead. In the case of nested interrupts, the situation worsens dramatically.</p>
+<p>To counter this effect, switching the processor's stack pointer to a dedicated interrupt stack upon the occurrence of an interrupt is employed. This way, process stacks and the interrupt stack become "decoupled" from each other, eliminating the need to reserve additional memory in each process's stack for interrupt handler execution.</p>
+<p>The implementation of a separate interrupt stack is done at the port level. Some processors have hardware support for switching the stack pointer to an interrupt stack, making the use of this capability efficient and safe<sup id="fnref:18"><a class="footnote-ref" href="#fn:18">18</a></sup>.</p>
+<p>Nested interrupts—i.e., those whose handlers can interrupt not only the main program but also other interrupt handlers—also have specific usage characteristics. Understanding these is important for the effective and safe use of this mechanism. In the case of a processor with an interrupt controller supporting multi-level prioritized interrupts, the situation with nested interrupts is relatively straightforward—potential hazardous situations when enabling nested interrupts are generally accounted for by the processor designers, and the interrupt controller prevents mishaps, such as those described below.</p>
+<p>In the case of a processor with a single-level interrupt system, its implementation typically involves automatically disabling interrupts globally upon the occurrence of any interrupt. This is done for simplicity and safety. That is, nested interrupts are not supported in such a system. To enable nested interrupts, it is sufficient to perform a global enable interrupts operation, which on processors with a single-level interrupt system is typically disabled by hardware when control is transferred to an interrupt handler. In this scenario, a situation is possible where an already executing interrupt handler is called again—if a request for handling the same interrupt is still pending<sup id="fnref:19"><a class="footnote-ref" href="#fn:19">19</a></sup>.</p>
+<p>Typically, this is an erroneous situation that must be avoided. To prevent finding oneself in such a position, one must clearly understand both the processor's operational specifics and its "context"<sup id="fnref:20"><a class="footnote-ref" href="#fn:20">20</a></sup>, and write code very carefully: before globally enabling interrupts, disable the activation of the interrupt whose handler is already executing to avoid re-entry into the same handler. Upon completion of its work, do not forget to restore the processor's control resources to their original state, as it was before manipulating nested interrupt enabling.</p>
+<p>Based on the above, the following recommendation can be given.</p>
+<div class="admonition error">
+<p class="admonition-title"><strong>WARNING</strong></p>
+<p>Despite the apparent advantage of the separate interrupt stack scheme, using this variant on processors that lack hardware support for switching the stack pointer to an interrupt stack is <strong>not recommended</strong>.</p>
+<p>This is due to the additional overhead of stack switching, poor portability—any non-standard extensions are a source of problems—and the fact that directly interfering with stack pointer management can, in one way or another, cause conflicts with local object addressing. For example, the compiler, seeing the body of an interrupt handler, allocates<sup id="fnref:21"><a class="footnote-ref" href="#fn:21">21</a></sup> memory for local objects on the stack. Moreover, it does this <em>before</em> the call<sup id="fnref:22"><a class="footnote-ref" href="#fn:22">22</a></sup> to the wrapper's constructor. Thus, after switching the stack pointer to the interrupt stack, the memory allocated earlier will physically be in a different location. The program will then operate incorrectly, and the compiler will be unable to detect this situation.</p>
+<p>Similarly, using nested interrupts on processors that do not support this capability in hardware is <strong>not recommended</strong>. Such interrupts require careful handling and typically need additional management—for instance, locking the interrupt source to prevent another call to the same handler when interrupts are enabled.</p>
+</div>
+<p><strong>Brief conclusion.</strong> The motivation for using stack pointer switching to an interrupt stack correlates with the use of nested interrupts—after all, in the case of nested interrupts, stack consumption (within interrupts) increases significantly. This imposes—in the absence of switching to a separate interrupt stack—additional requirements on the stack sizes of all processes<sup id="fnref:23"><a class="footnote-ref" href="#fn:23">23</a></sup>.</p>
+<div class="admonition tip">
+<p class="admonition-title"><strong>TIP</strong></p>
+<p>When using a preemptive RTOS, it is possible to structure the program so that interrupt handlers serve only as <strong>event sources</strong>, and all event processing is moved to the process level. This allows interrupt handlers to be small and fast, which, in turn, eliminates the need for both switching to an interrupt stack and enabling nested interrupts. In this case, the body of the interrupt handler can be comparable in size to the overhead of switching the stack pointer to an interrupt stack and enabling nested interrupts.</p>
+</div>
+<p>This is precisely the recommended approach when the processor lacks hardware support for switching the stack pointer to an interrupt stack and does not have an interrupt controller with hardware support for nested interrupts.</p>
+<p>It should be noted that a priority-based preemptive RTOS is, in a way, an analogue of a multi-level priority interrupt controller. That is, it provides the ability to distribute code execution according to importance/urgency. In this regard, in most cases, there is no need to place event handling code at the interrupt level, even if such a hardware controller exists. Instead, interrupts should be used only as <strong>event sources</strong><sup id="fnref:24"><a class="footnote-ref" href="#fn:24">24</a></sup>, with their handling placed at the process level. This is the recommended program design style.</p>
+<h3 id="system-timer">System Timer<a class="headerlink" href="#system-timer" title="Permanent link">🔗</a></h3>
+<p>The system timer is used to generate specific time intervals required for process operation. This includes timeout support.</p>
+<p>Typically, one of the processor's hardware timers is used as the system timer<sup id="fnref:25"><a class="footnote-ref" href="#fn:25">25</a></sup>.
+The functionality of the system timer is implemented in the kernel function <code>system_timer()</code>. See "Listing 5. System Timer" for the code of this function.</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="mo">01</span><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">TKernel</span><span class="o">::</span><span class="n">system_timer</span><span class="p">()</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="mo">02</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="mo">03</span><span class="w">        </span><span class="n">SYS_TIMER_CRIT_SECT</span><span class="p">();</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="mo">04</span><span class="w">    </span><span class="err">#</span><span class="k">if</span><span class="w"> </span><span class="n">scmRTOS_SYSTEM_TICKS_ENABLE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="mo">05</span><span class="w">        </span><span class="n">SysTickCount</span><span class="o">++</span><span class="p">;</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="mo">06</span><span class="w">    </span><span class="err">#</span><span class="n">endif</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="mo">07</span><span class="w">    </span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="mi">08</span><span class="w">    </span><span class="err">#</span><span class="k">if</span><span class="w"> </span><span class="n">scmRTOS_PRIORITY_ORDER</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="mi">09</span><span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">BaseIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="mi">10</span><span class="w">    </span><span class="err">#</span><span class="k">else</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="mi">11</span><span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">BaseIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="mi">12</span><span class="w">    </span><span class="err">#</span><span class="n">endif</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="mi">13</span><span class="w">    </span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="mi">14</span><span class="w">        </span><span class="k">for</span><span class="p">(</span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BaseIndex</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="p">(</span><span class="n">PROCESS_COUNT</span><span class="mi">-1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">BaseIndex</span><span class="p">);</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="mi">15</span><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="mi">16</span><span class="w">            </span><span class="n">TBaseProcess</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ProcessTable</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="mi">17</span><span class="w">    </span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="mi">18</span><span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">Timeout</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="mi">19</span><span class="w">            </span><span class="p">{</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="mi">20</span><span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="o">--</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">Timeout</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="mi">21</span><span class="w">                </span><span class="p">{</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="mi">22</span><span class="w">                    </span><span class="n">set_process_ready</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">Priority</span><span class="p">);</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="mi">23</span><span class="w">                </span><span class="p">}</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="mi">24</span><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="mi">25</span><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a><span class="mi">26</span><span class="w">    </span><span class="p">}</span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 5. System Timer</p>
+</figcaption>
+</figure>
+<p>As can be seen from the source code, the actions are very simple:</p>
+<ol>
+<li>If the tick counter is enabled, the counter variable is incremented (5).</li>
+<li>Then, in a loop, the timeout values of all registered processes are checked. If the value of the variable being checked is not equal to 0<sup id="fnref:26"><a class="footnote-ref" href="#fn:26">26</a></sup>, it is decremented and checked for 0. If it equals 0 (after decrementing)—i.e., the timeout for this process has expired—the process is moved to the ready state.</li>
+</ol>
+<p>Since this function is called inside the timer interrupt handler, upon returning to the main program (as described above), control will be transferred to the highest-priority process ready for execution. That is, if the timeout of some process (with higher priority than the interrupted one) expires, it will gain control upon exiting the interrupt. This is implemented using the scheduler (see above)<sup id="fnref:27"><a class="footnote-ref" href="#fn:27">27</a></sup>.</p>
+<div class="admonition info">
+<p class="admonition-title"><strong>NOTE</strong></p>
+<p>Some operating systems provide recommendations for setting the system tick duration. Most often, a range of 10<sup id="fnref:28"><a class="footnote-ref" href="#fn:28">28</a></sup> to 100 ms is mentioned. Perhaps for those operating systems, this is correct. The balance here is determined by the desire to achieve the lowest overhead from system timer interrupts and the desire to obtain finer time resolution.</p>
+<p>Given <strong>scmRTOS</strong>'s orientation towards small MCUs operating in real-time, and taking into account the fact that the (execution time) overhead<sup id="fnref:29"><a class="footnote-ref" href="#fn:29">29</a></sup> is small, the recommended system tick value is <strong>1 to 10 ms</strong>.</p>
+<p>An analogy can be drawn with other domains where smaller objects are usually higher-frequency: for example, a mouse's heartbeat is much faster than a human's, and a human's is faster than an elephant's. At the same time, "agility" is inversely related. A similar trend exists in technology; therefore, it is reasonable to expect that for small processors, the system tick period is smaller than for large ones—in larger systems, overhead is generally greater due to the typically higher load on more powerful processors and, consequently, their lower "agility".</p>
+</div>
+<hr />
+<p><a name="kernel-agent"></a></p>
+<h2 id="tkernelagent-and-extensions">TKernelAgent and Extensions<a class="headerlink" href="#tkernelagent-and-extensions" title="Permanent link">🔗</a></h2>
+<h3 id="kernel-agent">Kernel Agent<a class="headerlink" href="#kernel-agent" title="Permanent link">🔗</a></h3>
+<p>The <code>TKernelAgent</code> class is a special facility designed to provide access to kernel resources when building extensions to enhance the operating system's functionality.</p>
+<p>The general idea is as follows. Creating various functional extensions for the OS requires access to certain kernel resources—in particular, to the kernel variable containing the priority of the active process or to the system's process map. Providing direct access to this part of the internal representation would not be very wise—it would violate the security model of the object-oriented approach<sup id="fnref:30"><a class="footnote-ref" href="#fn:30">30</a></sup>. This leads to negative consequences, such as program inoperability in the absence of proper coding discipline and/or loss of compatibility in case of changes to the kernel's internal representation.</p>
+<p>Therefore, to solve the problem of accessing kernel resources, an approach based on a specially created class—the kernel agent—has been proposed. This class restricts access through its documented interface. All this allows for the creation of extensions in a formalized way, making the process simpler and safer.</p>
+<p>The code for the kernel agent class can be found in "Listing 6. TKernelAgent".</p>
+<figure>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="mo">01</span><span class="w">    </span><span class="k">class</span><span class="w"> </span><span class="nc">TKernelAgent</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="mo">02</span><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="mo">03</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">TBaseProcess</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">cur_proc</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">Kernel</span><span class="p">.</span><span class="n">ProcessTable</span><span class="p">[</span><span class="n">cur_proc_priority</span><span class="p">()];</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="mo">04</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="mo">05</span><span class="w">    </span><span class="k">protected</span><span class="o">:</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="mo">06</span><span class="w">        </span><span class="n">TKernelAgent</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="mo">07</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="k">const</span><span class="w">   </span><span class="o">&amp;</span><span class="w"> </span><span class="n">cur_proc_priority</span><span class="p">()</span><span class="w">       </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">Kernel</span><span class="p">.</span><span class="n">CurProcPriority</span><span class="p">;</span><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="mi">08</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="n">TProcessMap</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">ready_process_map</span><span class="p">()</span><span class="w">       </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">Kernel</span><span class="p">.</span><span class="n">ReadyProcessMap</span><span class="p">;</span><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="mi">09</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="n">timeout_t</span><span class="w">   </span><span class="o">&amp;</span><span class="w"> </span><span class="n">cur_proc_timeout</span><span class="p">()</span><span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">cur_proc</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Timeout</span><span class="p">;</span><span class="w">     </span><span class="p">}</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="mi">10</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">reschedule</span><span class="p">()</span><span class="w">                                </span><span class="p">{</span><span class="w"> </span><span class="n">Kernel</span><span class="p">.</span><span class="n">scheduler</span><span class="p">();</span><span class="w">             </span><span class="p">}</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="mi">11</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="mi">12</span><span class="w">        </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_process_ready</span><span class="w">   </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">pr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Kernel</span><span class="p">.</span><span class="n">set_process_ready</span><span class="p">(</span><span class="n">pr</span><span class="p">);</span><span class="w">   </span><span class="p">}</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="mi">13</span><span class="w">         </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_process_unready</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint_fast8_t</span><span class="w"> </span><span class="n">pr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Kernel</span><span class="p">.</span><span class="n">set_process_unready</span><span class="p">(</span><span class="n">pr</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="mi">14</span><span class="w"> </span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="mi">15</span><span class="w">     </span><span class="err">#</span><span class="k">if</span><span class="w"> </span><span class="n">scmRTOS_DEBUG_ENABLE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="mi">16</span><span class="w">         </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">TService</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">cur_proc_waiting_for</span><span class="p">()</span><span class="w">     </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">cur_proc</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">WaitingFor</span><span class="p">;</span><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="mi">17</span><span class="w">     </span><span class="err">#</span><span class="n">endif</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="mi">18</span><span class="w"> </span>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="mi">19</span><span class="w">     </span><span class="err">#</span><span class="k">if</span><span class="w"> </span><span class="n">scmRTOS_PROCESS_RESTART_ENABLE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="mi">20</span><span class="w">         </span><span class="n">INLINE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="mi">21</span><span class="w">         </span><span class="n">TProcessMap</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">cur_proc_waiting_map</span><span class="p">()</span><span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">cur_proc</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">WaitingProcessMap</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="mi">22</span><span class="w">     </span><span class="err">#</span><span class="n">endif</span>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="mi">23</span><span class="w">     </span><span class="p">};</span><span class="w">                                                                                         </span>
+</span></code></pre></div>
+<figcaption>
+<p>Listing 6. TKernelAgent</p>
+</figcaption>
+</figure>
+<p>As can be seen from the code, the class is defined in such a way that it is impossible to create objects of this class. This is done deliberately because, by design, <code>TKernelAgent</code> serves as a base for creating extensions: its main function is to provide a documented interface to kernel resources. Therefore, all use of this code becomes possible only in descendants of this class, which are the actual extensions.</p>
+<p>An example of using <code>TKernelAgent</code> will be examined in more detail later when describing the base class for creating interprocess communication services, <code>TService</code>.</p>
+<p>The entire class interface consists of inline functions, which in most cases allows implementing the necessary extensions without loss of efficiency compared to the scenario where access to kernel resources is performed directly.</p>
+<h3 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">🔗</a></h3>
+<p>The aforementioned kernel agent class enables the creation of additional facilities that extend the functional capabilities of the OS. The methodology for creating such facilities is simple—just declare a class that inherits from <code>TKernelAgent</code> and define its contents. Such classes are called operating system extensions.</p>
+<p>The placement of the OS kernel code is such that the definitions of classes and a number of member function definitions are separated in the header file <code>os_kernel.h</code>. This makes it possible to write a user class that has access to all definitions of OS kernel types, while at the same time, the definitions of this user class become available in the member functions of the kernel classes—for example, in the scheduler and in the system timer function<sup id="fnref:31"><a class="footnote-ref" href="#fn:31">31</a></sup>.</p>
+<p>Extensions are connected using the configuration file <code>scmRTOS_extensions.h</code>, which is included in <code>os_kernel.h</code> between the definitions of kernel types and their member functions. This allows the definition of an extension class to be physically placed in a separate user header file and included in the project by including this file in <code>scmRTOS_extensions.h</code>. After this, the extension is ready for use according to its intended purpose.</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>Objects marked with ‘*’ are present only in the variant using software interrupt-based control transfer.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>Perhaps, from an ideological standpoint, using a pointer to the process for these purposes would be more correct. However, analysis showed no performance gain, and the size of a pointer is typically larger than that of an integer variable for storing a priority.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>At the same time, the process can be active (i.e., executing) or inactive (i.e., waiting to gain control). The latter situation occurs when there is another ready-to-run process in the system with a higher priority.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>This higher-priority process can, in turn, be interrupted by an even higher-priority process, and so on, up to the highest-priority process. The highest-priority process can only be (temporarily) interrupted by a hardware interrupt, and upon return from that interrupt, control will always go back to this same highest-priority process. Thus, the highest-priority process cannot be preempted by any other process. Upon exiting an interrupt handler, control is always transferred to the highest-priority process ready for execution.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:5">
+<p>Or upon exiting an interrupt handler — depending on whether the control transfer is synchronous or asynchronous.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:6">
+<p>Usually implemented in assembly language.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:7">
+<p>All interrupt handlers in a program that use inter-process communication facilities must contain a declaration of a <code>TISRW</code> object placed <strong>before</strong> any call to a service function (i.e., where the scheduler might be invoked). This object must be declared before the first use of any OS services.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+<li id="fn:8">
+<p>This is a common property of many processors — after returning from an interrupt, a jump to the handler of the next interrupt is not possible immediately in the same machine cycle, but only after one or more cycles.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 8 in the text">&#8617;</a></p>
+</li>
+<li id="fn:9">
+<p><code>&lt;wait_for_context_switch_done&gt;</code> implies all the code that ensures context switching from starting of interrupts enabling.&#160;<a class="footnote-backref" href="#fnref:9" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+</li>
+<li id="fn:10">
+<p>This software interrupt handler is always implemented in assembly and is also platform-dependent, so its code is not provided here.&#160;<a class="footnote-backref" href="#fnref:10" title="Jump back to footnote 10 in the text">&#8617;</a></p>
+</li>
+<li id="fn:11">
+<p><div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">os_context_switcher</span><span class="p">(</span><span class="n">stack_item_t</span><span class="w"> </span><span class="o">**</span><span class="n">Curr_SP</span><span class="p">,</span><span class="w"> </span><span class="n">stack_item_t</span><span class="w"> </span><span class="o">*</span><span class="n">Next_SP</span><span class="p">)</span>
+</span></code></pre></div>&#160;<a class="footnote-backref" href="#fnref:11" title="Jump back to footnote 11 in the text">&#8617;</a></p>
+</li>
+<li id="fn:12">
+<p>The <strong>scmRTOS</strong> distribution is offered with several working usage examples where all this code for organizing and configuring the software interrupt is present. Therefore, the user can simply modify this code for their project's needs or use it as-is if it suits them.&#160;<a class="footnote-backref" href="#fnref:12" title="Jump back to footnote 12 in the text">&#8617;</a></p>
+</li>
+<li id="fn:13">
+<p>For example, on <strong>MSP430</strong>/IAR, the "local context" consists of only 4 registers.&#160;<a class="footnote-backref" href="#fnref:13" title="Jump back to footnote 13 in the text">&#8617;</a></p>
+</li>
+<li id="fn:14">
+<p>The aforementioned functions <code>isr_enter()</code> and <code>isr_exit()</code> are member functions of this wrapper class.&#160;<a class="footnote-backref" href="#fnref:14" title="Jump back to footnote 14 in the text">&#8617;</a></p>
+</li>
+<li id="fn:15">
+<p>Typically, the compiler divides processor registers into two groups: scratch and preserved. Scratch registers are those that any function can use without prior saving. Preserved registers are those whose values must be saved if needed. In some contexts, preserved registers are called local; in the context discussed here, these terms are synonymous.&#160;<a class="footnote-backref" href="#fnref:15" title="Jump back to footnote 15 in the text">&#8617;</a></p>
+</li>
+<li id="fn:16">
+<p>On different platforms, the proportion (of the total number) of these registers varies. For example, when using EWAVR, they occupy about half of the total, while with EW430, it's less than half. In the case of VisualDSP++/<strong>Blackfin</strong>, the proportion of these registers is large, but on this platform, stack sizes are typically sufficiently large not to worry about it.&#160;<a class="footnote-backref" href="#fnref:16" title="Jump back to footnote 16 in the text">&#8617;</a></p>
+</li>
+<li id="fn:17">
+<p>Unfortunately, when using the direct control transfer scheme, a call to the non-inline context switch function occurs, making it impossible to avoid the overhead of saving scratch registers in this case.&#160;<a class="footnote-backref" href="#fnref:17" title="Jump back to footnote 17 in the text">&#8617;</a></p>
+</li>
+<li id="fn:18">
+<p>In this case, this mechanism is the only one implemented in the port, and there is no need for a separate implementation of the <code>TISRW_SS</code> wrapper class.&#160;<a class="footnote-backref" href="#fnref:18" title="Jump back to footnote 18 in the text">&#8617;</a></p>
+</li>
+<li id="fn:19">
+<p>This could be related, for example, to events triggering the interrupt too frequently or an uncleared interrupt flag that initiates the interrupt request.&#160;<a class="footnote-backref" href="#fnref:19" title="Jump back to footnote 19 in the text">&#8617;</a></p>
+</li>
+<li id="fn:20">
+<p>Here, "context" implies the logical and semantic environment in which this part of the program is executing.&#160;<a class="footnote-backref" href="#fnref:20" title="Jump back to footnote 20 in the text">&#8617;</a></p>
+</li>
+<li id="fn:21">
+<p>More precisely — reserves it. This is usually done by modifying the stack pointer.&#160;<a class="footnote-backref" href="#fnref:21" title="Jump back to footnote 21 in the text">&#8617;</a></p>
+</li>
+<li id="fn:22">
+<p>It has every right to do so.&#160;<a class="footnote-backref" href="#fnref:22" title="Jump back to footnote 22 in the text">&#8617;</a></p>
+</li>
+<li id="fn:23">
+<p>Furthermore, <strong>each</strong> process must have a stack size large enough to cover both the process's own needs and the stack consumption of interrupt handlers, including the entire nesting hierarchy.&#160;<a class="footnote-backref" href="#fnref:23" title="Jump back to footnote 23 in the text">&#8617;</a></p>
+</li>
+<li id="fn:24">
+<p>By making interrupt handlers as simple, short, and fast as possible.&#160;<a class="footnote-backref" href="#fnref:24" title="Jump back to footnote 24 in the text">&#8617;</a></p>
+</li>
+<li id="fn:25">
+<p>The simplest timer (without "bells and whistles") is suitable for this. The only fundamental requirement is that it must be capable of generating periodic interrupts at equal intervals—for example, an overflow interrupt. It is also desirable to have the ability to control the overflow period to select a suitable system tick frequency.&#160;<a class="footnote-backref" href="#fnref:25" title="Jump back to footnote 25 in the text">&#8617;</a></p>
+</li>
+<li id="fn:26">
+<p>This means the process is waiting with a timeout.&#160;<a class="footnote-backref" href="#fnref:26" title="Jump back to footnote 26 in the text">&#8617;</a></p>
+</li>
+<li id="fn:27">
+<p>Given the ability to set the priority of the system timer interrupt.&#160;<a class="footnote-backref" href="#fnref:27" title="Jump back to footnote 27 in the text">&#8617;</a></p>
+</li>
+<li id="fn:28">
+<p>How, for example, can dynamic indication be organized with such a digit switching period when it is known that for comfortable operation, the switching period (for four digits) should be no more than 5 ms?&#160;<a class="footnote-backref" href="#fnref:28" title="Jump back to footnote 28 in the text">&#8617;</a></p>
+</li>
+<li id="fn:29">
+<p>Due to the small number of processes and the simple, fast scheduler.&#160;<a class="footnote-backref" href="#fnref:29" title="Jump back to footnote 29 in the text">&#8617;</a></p>
+</li>
+<li id="fn:30">
+<p>The principles of encapsulation and abstraction.&#160;<a class="footnote-backref" href="#fnref:30" title="Jump back to footnote 30 in the text">&#8617;</a></p>
+</li>
+<li id="fn:31">
+<p>In user hooks.&#160;<a class="footnote-backref" href="#fnref:31" title="Jump back to footnote 31 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../overview/" class="btn btn-neutral float-left" title="Overview"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../processes/" class="btn btn-neutral float-right" title="Processes">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../overview/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../processes/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/mathjax.js"></script>
+      <script src="../../js/mathjax/tex-mml-chtml.js"></script>
+      <script src="../../js/wavedrom.min.js"></script>
+      <script src="../../js/wavedrom_loader.js"></script>
+      <script src="../../js/wavedrom.unpkg.js"></script>
+      <script src="../../js/wavedrom_skin_default.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+</script></body>
+</html>

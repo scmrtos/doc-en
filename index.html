@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Instead of a preface - scmRTOS</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Instead of a preface";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+ <link href="assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }</style> <script src="assets/javascripts/glightbox.min.js"></script></head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> scmRTOS
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Intro</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Instead of a preface</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#why">Why?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#supported-platforms">Supported Platforms</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="src/overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">RTOS Components</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="src/kernel/">Kernel</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="src/processes/">Processes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="src/ipcs/">Interprocess Communications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="src/ports/">Ports</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendix</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="src/debug/">Debug</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="src/profiler/">Process Performance Profiling</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="src/glossary/">Glossary</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">scmRTOS</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Intro</li>
+      <li class="breadcrumb-item active">Instead of a preface</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="scmrtos">scmRTOS<a class="headerlink" href="#scmrtos" title="Permanent link">🔗</a></h1>
+<p>The abbreviation <strong>scmRTOS</strong> stands for <strong>Single-Chip Microcontroller Real Time Operating System</strong>.</p>
+<p>As the name implies, scmRTOS is designed for single-chip microcontrollers (MCUs), although nothing prevents it from being used with processors like Blackfin or Cortex-A.</p>
+<h3 id="why">Why?<a class="headerlink" href="#why" title="Permanent link">🔗</a></h3>
+<p>One of the primary goals behind creating this RTOS was the desire to obtain the simplest, most minimalist, fast, and efficient solution for implementing preemptive multitasking when using single-chip MCUs. Their resources are limited and typically cannot be expanded. Although technological advancements since the emergence of scmRTOS have significantly reduced the demands on RTOS efficiency, simplicity, speed, and small size remain desirable factors in many cases.</p>
+<p>The second main reason for scmRTOS's development is its use and implementation in the C++ programming language. C++ has become quite complex today, but scmRTOS employs only the most basic concepts and constructs of the language — essentially what was included in the C++98 standard: classes, templates, inheritance, function overloading.</p>
+<p>C++ in the embedded field is often seen as a deterrent — there's a certain mythology surrounding this language (high overhead, poor controllability, etc.). However, in practice, using C++ can simplify, rather than complicate, software development and maintenance (though the opposite effect is possible with the wrong choice of tools for the task).</p>
+<p>scmRTOS focuses on ease of use, greatly aided by the concept of a class, which encapsulates properties and provides the user only with an interface. This approach reduces the risk of incorrect usage of operating system objects.</p>
+<div class="admonition tip">
+<p class="admonition-title">TIP</p>
+<p>The history of <strong>scmRTOS</strong> and some "philosophical" remarks on the topic of real-time operating systems are provided in the document <a href="https://github.com/scmrtos/scmrtos-doc/blob/master/pdf/scmRTOS.ru.pdf">scmRTOS.ru.pdf</a>.</p>
+</div>
+<h3 id="supported-platforms">Supported Platforms<a class="headerlink" href="#supported-platforms" title="Permanent link">🔗</a></h3>
+<p>Currently, scmRTOS supports the following platforms (processor/toolchain):</p>
+<ul>
+<li>MSP430/IAR Systems;</li>
+<li>MSP430/GCC;</li>
+<li>AVR/IAR Systems;</li>
+<li>AVR/GCC;</li>
+<li>Cortex-M/GCC;</li>
+<li>Cortex-M/IAR Systems;</li>
+<li>Cortex-A/GCC;</li>
+<li>ARM7/GCC;</li>
+<li>Blackfin/VisualDSP++;</li>
+<li>Blackfin/GCC;</li>
+<li>Blackfin/CCES;</li>
+<li>STM8/IAR Systems.</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="src/overview/" class="btn btn-neutral float-right" title="Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+      <span><a href="src/overview/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="js/mathjax.js"></script>
+      <script src="js/mathjax/tex-mml-chtml.js"></script>
+      <script src="js/wavedrom.min.js"></script>
+      <script src="js/wavedrom_loader.js"></script>
+      <script src="js/wavedrom.unpkg.js"></script>
+      <script src="js/wavedrom_skin_default.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+</script></body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Glossary - scmRTOS</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Glossary";
+        var mkdocs_page_input_path = "src/glossary.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+ <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> scmRTOS
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Intro</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../..">Instead of a preface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">RTOS Components</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../kernel/">Kernel</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipcs/">Interprocess Communications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ports/">Ports</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendix</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">Debug</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Performance Profiling</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Glossary</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#c">C</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c_1">C++</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#critical-section">Critical Section</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ec">EC++</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#idle-process-background-process">Idle Process (Background Process)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#inter-process-communication-ipc-services">Inter-Process Communication (IPC) Services</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#interrupt-stack">Interrupt Stack</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#isr">ISR</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#kernel">Kernel</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#mcu">MCU</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#operating-system-process">Operating System Process</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#os-extensions">OS Extensions</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#os">OS</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#os-configuration">OS Configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#os-port">OS Port</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#preemption">Preemption</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process-context">Process Context</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process-executable-function">Process Executable Function</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process-map">Process Map</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process-priority">Process Priority</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process-stack">Process Stack</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process-tag">Process Tag</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#profiler">Profiler</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ram">RAM</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ring-buffer">Ring Buffer</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rtos">RTOS</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#scheduler">Scheduler</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#stack-frame">Stack Frame</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#system-timer">System Timer</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#user-hook">User Hook</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#timeout">Timeout</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#tos">TOS</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">scmRTOS</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Appendix</li>
+      <li class="breadcrumb-item active">Glossary</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h2 id="terms-and-abbreviations">Terms and Abbreviations<a class="headerlink" href="#terms-and-abbreviations" title="Permanent link">🔗</a></h2>
+<h4 id="c">C<a class="headerlink" href="#c" title="Permanent link">🔗</a></h4>
+<p>A general-purpose, low-level procedural programming language.</p>
+<h4 id="c_1">C++<a class="headerlink" href="#c_1" title="Permanent link">🔗</a></h4>
+<p>A general-purpose programming language supporting procedural, object-based, and object-oriented programming paradigms.</p>
+<h4 id="critical-section">Critical Section<a class="headerlink" href="#critical-section" title="Permanent link">🔗</a></h4>
+<p>A code fragment during whose execution control transfer is prohibited. In scmRTOS, this is currently implemented in the simplest way by globally disabling interrupts.</p>
+<h4 id="ec">EC++<a class="headerlink" href="#ec" title="Permanent link">🔗</a></h4>
+<p>Embedded C++, a subset of C++. It does not support namespaces, templates, multiple inheritance, RTTI, exception handling, or the new explicit type conversion syntax.</p>
+<h4 id="idle-process-background-process">Idle Process (Background Process)<a class="headerlink" href="#idle-process-background-process" title="Permanent link">🔗</a></h4>
+<p>A system process that gains control when all user processes are in a state of waiting for events. This process cannot transition to a waiting state and may execute a user hook if enabled during configuration.</p>
+<h4 id="inter-process-communication-ipc-services">Inter-Process Communication (IPC) Services<a class="headerlink" href="#inter-process-communication-ipc-services" title="Permanent link">🔗</a></h4>
+<p>Objects and/or OS extensions designed for safe interaction (synchronization of work and data exchange) between different processes, as well as for organizing event-driven program execution based on events occurring in interrupts and processes.</p>
+<h4 id="interrupt-stack">Interrupt Stack<a class="headerlink" href="#interrupt-stack" title="Permanent link">🔗</a></h4>
+<p>A specially allocated RAM area intended for use as a stack during the execution of interrupt handler code. If an interrupt stack is used in the program, the processor's stack pointer is switched to the interrupt stack upon entering an interrupt handler and switched back to the process stack upon exit.</p>
+<h4 id="isr">ISR<a class="headerlink" href="#isr" title="Permanent link">🔗</a></h4>
+<p>Interrupt Service Routine – an interrupt handler.</p>
+<h4 id="kernel">Kernel<a class="headerlink" href="#kernel" title="Permanent link">🔗</a></h4>
+<p>The most important and central part of the operating system, performing functions related to organizing processes, scheduling their execution, supporting inter-process communication, system time, and OS extensions.</p>
+<h4 id="mcu">MCU<a class="headerlink" href="#mcu" title="Permanent link">🔗</a></h4>
+<p>Microcontroller.</p>
+<h4 id="operating-system-process">Operating System Process<a class="headerlink" href="#operating-system-process" title="Permanent link">🔗</a></h4>
+<p>An object that implements the execution of a complete, independent program fragment asynchronous to others, including support for control transfer both at the process level and at the interrupt level.</p>
+<h4 id="os-extensions">OS Extensions<a class="headerlink" href="#os-extensions" title="Permanent link">🔗</a></h4>
+<p>Software objects that extend the functionality of the operating system but are not part of the core OS. An example of an extension is the system process activity profiler.</p>
+<h4 id="os">OS<a class="headerlink" href="#os" title="Permanent link">🔗</a></h4>
+<p>Operating System.</p>
+<h4 id="os-configuration">OS Configuration<a class="headerlink" href="#os-configuration" title="Permanent link">🔗</a></h4>
+<p>The set of macros, types, other definitions, and declarations that specify the quantitative and qualitative characteristics and properties of the operating system in a specific project. Configuration is performed by defining the contents of special header configuration files, as well as by some user code executed before OS startup.</p>
+<h4 id="os-port">OS Port<a class="headerlink" href="#os-port" title="Permanent link">🔗</a></h4>
+<p>The combination of common and platform-dependent OS code tailored to a specific software and hardware platform.</p>
+<h4 id="preemption">Preemption<a class="headerlink" href="#preemption" title="Permanent link">🔗</a></h4>
+<p>The set of actions performed by operating system components aimed at forcibly transferring control from one process to another.</p>
+<h4 id="process-context">Process Context<a class="headerlink" href="#process-context" title="Permanent link">🔗</a></h4>
+<p>The software and hardware environment of the executing code, including processor registers, stack pointers, and other resources necessary for program execution. Since control transfer from one process to another in a preemptive OS can occur at an unpredictable moment, the process context must be saved until the next time this process gains control. Because each process executes independently and asynchronously relative to other processes, to ensure the correct operation of a preemptive OS, each process must have its own context.</p>
+<h4 id="process-executable-function">Process Executable Function<a class="headerlink" href="#process-executable-function" title="Permanent link">🔗</a></h4>
+<p>A static member function of the process class that implements an independent, asynchronous program execution flow in the form of an infinite loop.</p>
+<h4 id="process-map">Process Map<a class="headerlink" href="#process-map" title="Permanent link">🔗</a></h4>
+<p>An operating system object containing one or more process tags. Physically implemented based on an integer variable. Each bit in the process map corresponds to one process and uniquely maps to the process priority.</p>
+<h4 id="process-priority">Process Priority<a class="headerlink" href="#process-priority" title="Permanent link">🔗</a></h4>
+<p>A property of a process (an integer-type object) that determines the order of process selection during operations in the scheduler and other OS components. Serves as a unique process identifier.</p>
+<h4 id="process-stack">Process Stack<a class="headerlink" href="#process-stack" title="Permanent link">🔗</a></h4>
+<p>A memory area in the form of an array that is a data member of the process object, used as a stack in the process's executable function. Also serves as the location where the process context is saved during control transfer.</p>
+<h4 id="process-tag">Process Tag<a class="headerlink" href="#process-tag" title="Permanent link">🔗</a></h4>
+<p>A binary number mask containing only one non-zero bit, whose position is uniquely related to the process priority number. Like the process priority, the tag is a unique identifier but has a different representation than the process priority. Each representation (priority or tag) is used where it is more appropriate from the perspective of program efficiency.</p>
+<h4 id="profiler">Profiler<a class="headerlink" href="#profiler" title="Permanent link">🔗</a></h4>
+<p>An object that measures, by one means or another, the distribution of processor time among processes and has facilities for providing this information to the user.</p>
+<h4 id="ram">RAM<a class="headerlink" href="#ram" title="Permanent link">🔗</a></h4>
+<p>Random Access Memory.</p>
+<h4 id="ring-buffer">Ring Buffer<a class="headerlink" href="#ring-buffer" title="Permanent link">🔗</a></h4>
+<p>A data object representing a queue. It has two data ports (access functions) – an input for writing and an output for reading. Implemented using an array and two indices (pointers) denoting the start and end of the queue. Upon reaching the physical end of the array, writing/reading starts from the beginning again, meaning the indices move in a ring, hence the object's name.</p>
+<h4 id="rtos">RTOS<a class="headerlink" href="#rtos" title="Permanent link">🔗</a></h4>
+<p>Real-Time Operating System.</p>
+<h4 id="scheduler">Scheduler<a class="headerlink" href="#scheduler" title="Permanent link">🔗</a></h4>
+<p>A core component of the OS kernel responsible for managing the order of process execution.</p>
+<h4 id="stack-frame">Stack Frame<a class="headerlink" href="#stack-frame" title="Permanent link">🔗</a></h4>
+<p>Represents a set of data placed in the process stack exactly as it is when the process context is saved during control transfer.</p>
+<h4 id="system-timer">System Timer<a class="headerlink" href="#system-timer" title="Permanent link">🔗</a></h4>
+<p>A hardware timer of the target processor selected as the source for generating interrupts at a specified period, as well as the OS function called from the timer's ISR that implements the logic for handling process timeouts.</p>
+<h4 id="user-hook">User Hook<a class="headerlink" href="#user-hook" title="Permanent link">🔗</a></h4>
+<p>A function called from the OS code, whose body must be defined by the user. This allows user-defined code to be executed directly from within the operating system's internal functions without modifying its code.
+To avoid forcing the user to define the bodies of hooks they do not use, the hook is called only if enabled during configuration. That is, if a user wishes to use a particular hook, they must enable its use and define its body.</p>
+<h4 id="timeout">Timeout<a class="headerlink" href="#timeout" title="Permanent link">🔗</a></h4>
+<p>A time interval, specified by an integer-type object, used for organizing conditional or unconditional event waiting by processes.</p>
+<h4 id="tos">TOS<a class="headerlink" href="#tos" title="Permanent link">🔗</a></h4>
+<p>Top Of Stack. The address of the stack element pointed to by the processor's hardware stack pointer.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../profiler/" class="btn btn-neutral float-left" title="Process Performance Profiling"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../profiler/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/mathjax.js"></script>
+      <script src="../../js/mathjax/tex-mml-chtml.js"></script>
+      <script src="../../js/wavedrom.min.js"></script>
+      <script src="../../js/wavedrom_loader.js"></script>
+      <script src="../../js/wavedrom.unpkg.js"></script>
+      <script src="../../js/wavedrom_skin_default.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+</script></body>
+</html>
