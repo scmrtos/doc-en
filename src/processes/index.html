@@ -267,7 +267,7 @@
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">Slon</span><span class="w"> </span><span class="n">slon</span><span class="p">;</span>
 </span></code></pre></div>
 <p>where <code>n</code> is the priority number.</p>
-<p><a href="../overview/#process-exec">"Overview Listing 1. Process Executable Function"</a> illustrates a typical example of a process function.</p>
+<p><a href="../overview/#process-exec">"Listing 1. Process Executable Function in Overview section"</a> illustrates a typical example of a process function.</p>
 <p>Using a process primarily involves writing user code inside the process function. As previously mentioned, a few simple rules must be followed:</p>
 <ul>
 <li>Care must be taken to ensure that program flow never exits the process function. Otherwise, since this function was not called in the conventional way, upon exit the flow of control would jump to undefined addresses, leading to undefined program behavior (though in practice, the behavior is usually quite defined—the program simply stops working!).</li>
