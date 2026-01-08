@@ -6,7 +6,7 @@ Due to significant differences in both hardware architectures and the developmen
 
 [^1]: This applies not only to the OS but also to other cross-platform software.
 
-This chapter primarily examines the platform-specific components, their contents and characteristics, and provides brief instructions for porting the OS—i.e., the steps required to create a new port.
+This chapter primarily examines the platform-specific components, their contents and characteristics, and provides brief instructions for porting the OS&nbsp;– i.e., the steps required to create a new port.
 
 The platform-specific code for each target platform is contained in a separate directory and minimally includes three files:
 
@@ -18,13 +18,13 @@ The platform-specific code for each target platform is contained in a separate d
 
 Configuration of the OS code for a target platform is achieved through:
 
-* definition of special preprocessor macros;
-* conditional compilation directives;
-* definition of user-defined types whose implementation depends on the target platform;
-* type aliases for certain types;
-* definition of functions whose implementation is delegated to the port level.
+* Definition of special preprocessor macros.
+* Conditional compilation directives.
+* Definition of user-defined types whose implementation depends on the target platform.
+* Type aliases for certain types.
+* Definition of functions whose implementation is delegated to the port level.
 
-A critical and delicate part of the port code involves the implementation of assembly-language subroutines responsible for system startup, saving the context of the interrupted process, switching stack pointers, and restoring the context of the process gaining control—including the software interrupt handler that performs context switching. Implementing this code requires the port developer to have in-depth knowledge of the target hardware architecture at a low level, as well as proficiency in using the toolchain (compiler, assembler, linker) for mixed-language[^3] projects.
+A critical and delicate part of the port code involves the implementation of assembly-language subroutines responsible for system startup, saving the context of the interrupted process, switching stack pointers, and restoring the context of the process gaining control, including the software interrupt handler that performs context switching. Implementing this code requires the port developer to have in-depth knowledge of the target hardware architecture at a low level, as well as proficiency in using the toolchain (compiler, assembler, linker) for mixed-language[^3] projects.
 
 [^3]: That is, projects containing source files in different programming languages—in this case, C++ and the assembly language of the target hardware platform.
 
@@ -83,7 +83,9 @@ Used in the system timer interrupt handler to determine whether a critical secti
 CONTEXT_SWITCH_HOOK_CRIT_SECT
 ```
 
-Determines whether the context switch hook executes within a critical section. It is essential that the hook executes atomically with respect to kernel variable manipulation (particularly `SchedProcPriority`), meaning the scheduler must not be invoked during hook execution. Scheduler invocation can occur from interrupts if the processor has a hardware prioritized interrupt controller and the software context-switch interrupt has lower priority than others. In such cases, the hook code must run in a critical section, and the macro should be defined as `TCritSect cs`. This is a critical consideration&nbsp;—&nbsp;failure to address it properly can lead to elusive runtime errors, requiring careful attention during porting.
+Determines whether the context switch hook executes within a critical section. It is essential that the hook executes atomically with respect to kernel variable manipulation (particularly `SchedProcPriority`), meaning the scheduler must not be invoked during hook execution. Scheduler invocation can occur from interrupts if the processor has a hardware prioritized interrupt controller and the software context-switch interrupt has lower priority than others.
+
+In such cases, the hook code must run in a critical section, and the macro should be defined as `TCritSect cs`. This is a critical consideration: failure to address it properly can lead to elusive runtime errors, requiring careful attention during porting.
 
 ----
 ```cpp
@@ -99,7 +101,7 @@ For platforms with a separate return stack, this macro should be defined as 1. F
 stack_item_t
 ```
 
-Type alias for the built-in type representing a stack element on the target processor.
+Type alias for the built-in type representing a stack item on the target processor.
 
 ----
 ```cpp
@@ -201,20 +203,20 @@ Porting typically requires defining all the macros, types, and functions listed 
 
 The most delicate and critical tasks involve implementing the assembly code and the stack frame initialization function. Key aspects requiring particular attention include:
 
-* determining the calling conventions used by the compiler to identify which registers (or stack areas) are used for passing arguments of various types;
-* understanding how the processor handles saving of return addresses and status registers upon interrupt occurrence—this is essential for correct stack frame formation on the target platform, which in turn is necessary for implementing context switch functions/handlers and stack frame initialization;
-* verifying the name mangling scheme for exported/imported symbols in assembly. In the simplest case, C names (and `"extern C"` names in C++) are visible unchanged in assembly, but on some platforms[^7] prefixes and/or suffixes may be added, requiring assembly functions to be named accordingly for correct linker resolution.
+* Determining the calling conventions used by the compiler to identify which registers (or stack areas) are used for passing arguments of various types.
+* Understanding how the processor handles saving of return addresses and status registers upon interrupt occurrence&nbsp;– this is essential for correct stack frame construction on the target platform, which in turn is necessary for implementing context switch functions/handlers and stack frame initialization.
+* Verifying the name mangling scheme for exported/imported symbols in assembly. In the simplest case, C names (and `"extern C"` names in C++) are visible unchanged in assembly, but on some platforms[^7] prefixes and/or suffixes may be added, requiring assembly functions to be named accordingly for correct linker resolution.
 
 [^7]: Notably on Blackfin.
 
 [^6]: C++ names undergo special mangling to support function overloading and type-safe linking, making direct assembly access difficult. Therefore, functions defined in C++-compiled files that need to be accessed from assembly must be declared with `"extern C"` linkage.
 
-All assembly code should be placed in the file `os_target_asm.ext` mentioned earlier. Macro and type definitions, along with inline functions, belong in `os_target.h`. The file `os_target.cpp` should declare type objects if needed (e.g., `OS::TPrioMaskTable OS::PrioMaskTable`) and define `TBaseProcess::init_stack_frame()` and the system timer interrupt handler `system_timer_isr()`.
+All assembly code should be placed in the file `os_target_asm.ext` mentioned earlier. Macro and type definitions, along with inline functions, belong in `os_target.h`. The file `os_target.cpp` should declare type objects if needed (e.g., `OS::TPrioMaskTable OS::PrioMaskTable`), define `TBaseProcess::init_stack_frame()` and the system timer interrupt handler `system_timer_isr()`.
 
 The above provides only general information related to OS ports. Porting involves numerous specific nuances whose detailed description is beyond the scope of this document.
 
 !!! tip "**TIP**"
-    When creating a new port, it is advisable to use an existing port as a template or reference—this significantly simplifies the process. The choice of reference port depends on the architectural and toolchain similarity between the existing port and the target platform.
+    When creating a new port, it is advisable to use an existing port as a template or reference&nbsp;– this significantly simplifies the process. The choice of reference port depends on the architectural and toolchain similarity between the existing port and the target platform.
 
 ## Integration into a Working Project
 
@@ -227,6 +229,6 @@ For port configuration, the project must include the following files:
 
 The file `scmRTOS_config.h` contains most configuration macros defining parameters such as the number of processes, context switch method, enabling of system time functions, user hook support, priority value ordering, and similar settings.
 
-The file `scmRTOS_target_cfg.h` contains code for managing target processor resources selected for system functions—primarily the system timer and context-switch interrupt.
+The file `scmRTOS_target_cfg.h` contains code for managing target processor resources selected for system functions&nbsp;– primarily the system timer and context-switch interrupt.
 
 The contents of both configuration files are described in detail in documents specific to individual ports.

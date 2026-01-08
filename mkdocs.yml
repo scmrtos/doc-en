@@ -20,6 +20,7 @@ nav:
     - Intro:
         - Not a Preface                  : index.md 
         - Overview                       : src/overview.md
+    
     - RTOS Components:
         - Kernel                         : src/kernel.md
         - Processes                      : src/processes.md
@@ -28,7 +29,7 @@ nav:
 
     - Appendix:
         - Debug                          : src/debug.md
-        - Process Performance Profiling  : src/profiler.md
+        - Process Profiling              : src/profiler.md
         - 'Example: Job Queue'           : src/example-job-queue.md
         - Glossary                       : src/glossary.md
 

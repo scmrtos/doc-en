@@ -7,12 +7,9 @@ A general-purpose, low-level procedural programming language.
 A general-purpose programming language supporting procedural, object-based, and object-oriented programming paradigms.
 
 #### Critical Section  
-A code fragment during whose execution control transfer is prohibited. In **scmRTOS**, this is currently implemented in the simplest way—by globally disabling interrupts.
+A code fragment during whose execution control transfer is prohibited. In **scmRTOS**, this is currently implemented in the simplest way by globally disabling interrupts.
 
-#### EC++  
-Embedded C++—a subset of C++. It excludes namespaces, templates, multiple inheritance, RTTI, exception handling, and the newer explicit type conversion syntax.
-
-#### Idle Process (Background Process)  
+#### Idle Process (RTOS Background Process)  
 A system process that receives control when all user processes are waiting for events. This process cannot enter a waiting state and may execute a user hook if enabled during configuration.
 
 #### Interprocess Communication (IPC) Services  
@@ -22,7 +19,7 @@ Objects and/or OS extensions designed for safe interaction (work synchronization
 A specially allocated RAM area intended for use as a stack during execution of interrupt handler code. When an interrupt stack is used, the processor's stack pointer is switched to the interrupt stack upon entering an interrupt handler and switched back to the process stack upon exit.
 
 #### ISR  
-Interrupt Service Routine—an interrupt handler.
+Interrupt Service Routine&nbsp;– an interrupt handler.
 
 #### Kernel  
 The most important and central part of the operating system, responsible for organizing processes, scheduling their execution, supporting interprocess communication, managing system time, and handling OS extensions.
@@ -33,14 +30,14 @@ Microcontroller.
 #### Operating System Process  
 An object that implements the execution of a complete, independent program fragment asynchronous to others, including support for control transfer at both the process level and the interrupt level.
 
-#### OS Extensions  
-Software objects that extend the functionality of the operating system but are not part of the core OS. An example of an extension is the process activity profiler.
-
 #### OS  
 Operating System.
 
 #### OS Configuration  
 The set of macros, types, other definitions, and declarations that specify the quantitative and qualitative characteristics and properties of the operating system in a specific project. Configuration is performed by defining the contents of special header configuration files and by certain user code executed before OS startup.
+
+#### OS Extensions  
+Software objects that extend the functionality of the operating system but are not part of the core OS. An example of an extension is [the process activity profiler](profiler.md).
 
 #### OS Port  
 The combination of common and platform-dependent OS code adapted to a specific software and hardware platform.
@@ -73,7 +70,7 @@ An object that measures, by one means or another, the distribution of processor 
 Random Access Memory.
 
 #### Ring Buffer  
-A data object representing a queue. It has two data ports (access functions)—an input for writing and an output for reading. Implemented using an array and two indices (pointers) denoting the start and end of the queue. Upon reaching the physical end of the array, writing/reading wraps to the beginning, hence the name.
+A data object representing a queue. It has two data ports (access functions): an input for writing and an output for reading. Implemented using an array and two indices (pointers) denoting the start and end of the queue. Upon reaching the physical end of the array, writing/reading wraps to the beginning, hence the name.
 
 #### RTOS  
 Real-Time Operating System.
