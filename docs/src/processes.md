@@ -1,96 +1,128 @@
 # Processes
 ----
 
-## General Information and Internal Representation
+## General Information and<br> Internal Representation
 
 ### The Process Concept
 
 In **scmRTOS**, a process is an object of a type derived from the class `OS::TBaseProcess`. The reason each process requires its own distinct type—rather than simply creating all processes as objects of `OS::TBaseProcess`—is that, despite their similarities, processes differ in key aspects: they have different stack sizes and different priority values (which, it should be remembered, are assigned statically).
 
-To define process types, the standard C++ feature—**templates**—is used. This approach yields compact process types that contain all necessary internal data, including the process stack itself, which varies in size across processes and is specified individually.
+To define process types, the standard C++ feature—templates—is used. This approach yields compact process types that contain all necessary internal data, including the process stack itself, which varies in size across processes and is specified individually.
+
+### TBaseProcess
+
+The core functionality of a process is defined in the base class `OS::TBaseProcess`, from which actual processes are derived using the `OS::process<>` template, as mentioned earlier. This approach is chosen to avoid duplicating identical code across template instantiations[^1].
+
+[^1]: In programming slang, these are often called instances.
+
+Therefore, the template itself declares only those elements that differ between processes&nbsp;– the stacks and the process executable function (`exec()`). The source code for the class `OS::TBaseProcess` is presented[^2], see "Listing 1. TBaseProcess".
+
+[^2]: In reality, there are two variants of this class: the standard one (shown here) and a version with a separate return-address stack. The latter is omitted for brevity, as it introduces no fundamental differences relevant to understanding the concepts.
 
 ```cpp
-01 class TBaseProcess
-02 {
-03     friend class TKernel;
-04     friend class TISRW;
-05     friend class TISRW_SS;
-06     friend class TKernelAgent;
-07
-08     friend void run();
-09
-10 public:
-11     TBaseProcess( stack_item_t * StackPoolEnd
-12                 , TPriority pr
-13                 , void (*exec)()
-14 #if scmRTOS_DEBUG_ENABLE == 1
-15                 , stack_item_t * StackPool
-16 #endif
-17                 );
-18 protected:
-19     INLINE void set_unready() { Kernel.set_process_unready(this->Priority); }
-20     void init_stack_frame( stack_item_t * StackPoolEnd
-21                          , void (*exec)()
-22 #if scmRTOS_DEBUG_ENABLE == 1
-23                          , stack_item_t * StackPool
-24 #endif
-25                          );
-26 public:
-27     static void sleep(timeout_t timeout = 0);
-28     void wake_up();
-29     void force_wake_up();
-30     INLINE void start() { force_wake_up(); }
-31     INLINE bool is_sleeping() const;
-32     INLINE bool is_suspended() const;
-33
-34 #if scmRTOS_DEBUG_ENABLE == 1
-35     INLINE TService * waiting_for() { return WaitingFor; }
-36 public:
-37     size_t stack_slack() const;
-38 #endif // scmRTOS_DEBUG_ENABLE
-39
-40 #if scmRTOS_PROCESS_RESTART_ENABLE == 1
-41 protected:
-42     void reset_controls();
-43 #endif
-44     //-----------------------------------------------------
-45     //
-46     // Data members
-47     //
-48 protected:
-49     stack_item_t * StackPointer;
-50     volatile timeout_t Timeout;
-51     const TPriority Priority;
-52 #if scmRTOS_DEBUG_ENABLE == 1
-53     TService * volatile WaitingFor;
-54     const stack_item_t * const StackPool;
-55 #endif // scmRTOS_DEBUG_ENABLE
-56
-57 #if scmRTOS_PROCESS_RESTART_ENABLE == 1
-58     volatile TProcessMap * WaitingProcessMap;
-59 #endif
-60
-61 #if scmRTOS_SUSPENDED_PROCESS_ENABLE != 0
-62     static TProcessMap SuspendedProcessMap;
-63 #endif
-64 };
+01    class TBaseProcess                                                             
+02    {                                                                              
+03        friend class TKernel;                                                      
+04        friend class TISRW;                                                        
+05        friend class TISRW_SS;                                                     
+06        friend class TKernelAgent;                                                 
+07                                                                                   
+08        friend void run();                                                         
+09                                                                                   
+10    public:                                                                        
+11        TBaseProcess( stack_item_t * StackPoolEnd                                  
+12                    , TPriority pr                                                 
+13                    , void (*exec)()                                               
+14                #if scmRTOS_DEBUG_ENABLE == 1                                      
+15                    , stack_item_t * aStackPool                                    
+16                    , const char   * name = 0                                      
+17                #endif                                                             
+18                    );                                                             
+19    protected:                                                                     
+20        INLINE void set_unready() { Kernel.set_process_unready(this->Priority); }  
+21        void init_stack_frame( stack_item_t * StackPoolEnd                         
+22                             , void (*exec)()                                      
+23        #if scmRTOS_DEBUG_ENABLE == 1                                              
+24                             , stack_item_t * StackPool                            
+25        #endif                                                                     
+26                             );                                                    
+27    public:                                                                        
+28                                                                                   
+29    #else  // SEPARATE_RETURN_STACK                                                
+30                                                                                   
+31        TBaseProcess( stack_item_t* StackPoolEnd                                   
+32                    , stack_item_t* RStack                                         
+33                    , TPriority pr                                                 
+34                    , void (*exec)()                                               
+35                #if scmRTOS_DEBUG_ENABLE == 1                                      
+36                    , stack_item_t * aStackPool                                    
+37                    , stack_item_t * aRStackPool                                   
+38                    , const char   * name = 0                                      
+39                #endif                                                             
+40                    );                                                             
+41    protected:                                                                     
+42        void init_stack_frame( stack_item_t * Stack                                
+43                             , stack_item_t * RStack                               
+44                             , void (*exec)()                                      
+45        #if scmRTOS_DEBUG_ENABLE == 1                                              
+46                             , stack_item_t * StackPool                            
+47                             , stack_item_t * RStackPool                           
+48        #endif                                                                     
+49                             );                                                    
+50                                                                                   
+51        TPriority   priority() const { return Priority; }                          
+52                                                                                   
+53        static void sleep(timeout_t timeout = 0);                                  
+54               void wake_up();                                                     
+55               void force_wake_up();                                               
+56        INLINE void start() { force_wake_up(); }                                   
+57                                                                                   
+58        INLINE bool is_sleeping() const;                                           
+59        INLINE bool is_suspended() const;                                          
+60                                                                                   
+61    #if scmRTOS_DEBUG_ENABLE == 1                                                  
+62      INLINE TService * waiting_for() const { return WaitingFor; }                 
+63    public:                                                                        
+64               size_t       stack_size()  const { return StackSize; }              
+65               size_t       stack_slack() const;                                   
+66               const char * name()        const { return Name; }                   
+67    #endif // scmRTOS_DEBUG_ENABLE                                                 
+68                                                                                   
+69    #if scmRTOS_PROCESS_RESTART_ENABLE == 1                                        
+70    protected:                                                                     
+71               void reset_controls();                                              
+72    #endif                                                                         
+73                                                                                   
+74        //-----------------------------------------------------                    
+75        //                                                                         
+76        //    Data members                                                         
+77        //                                                                         
+78    protected:                                                                     
+79        stack_item_t *     StackPointer;                                           
+80        volatile timeout_t Timeout;                                                
+81        const TPriority    Priority;                                               
+82    #if scmRTOS_DEBUG_ENABLE == 1                                                  
+83        TService           * volatile WaitingFor;                                  
+84        const stack_item_t * const    StackPool;                                   
+85        const size_t                  StackSize; // as number of stack_item_t items
+86        const char                  * Name;                                        
+87    #endif // scmRTOS_DEBUG_ENABLE                                                 
+88                                                                                   
+89    #if scmRTOS_PROCESS_RESTART_ENABLE == 1                                        
+90        volatile TProcessMap * WaitingProcessMap;                                  
+91    #endif                                                                         
+92                                                                                   
+93    #if scmRTOS_SUSPENDED_PROCESS_ENABLE != 0                                      
+94        static TProcessMap SuspendedProcessMap;                                    
+95    #endif                                                                         
+96    };                                                                             
 ```
 
 /// Caption  
 Listing 1. TBaseProcess  
 ///
 
-### TBaseProcess
-
-The core functionality of a process is defined in the base class `OS::TBaseProcess`, from which actual processes are derived using the `OS::process<>` template, as mentioned earlier. This approach is chosen to avoid duplicating identical code across template instantiations[^1].
-
-[^1]: In programming jargon, these are often called instances.
-
-Therefore, the template itself declares only those elements that differ between processes—the stacks and the process executable function (`exec()`). The source code for the class `OS::TBaseProcess` is presented[^2]—see "Listing 1. TBaseProcess".
-
-[^2]: In reality, there are two variants of this class: the standard one (shown here) and a version with a separate return-address stack. The latter is omitted for brevity, as it introduces no fundamental differences relevant to understanding the concepts.
-
-Despite the seemingly extensive class definition, `TBaseProcess` is actually quite small and simple. Its data representation consists of just three core members: the stack pointer (line 49), the timeout tick counter (line 50), and the priority value (line 51). The remaining data members are auxiliary and appear only when additional features are enabled—such as the ability to interrupt and restart a process at any point, or debugging support[^3].
+Despite the seemingly extensive class definition, `TBaseProcess` is actually quite small and simple. Its data representation consists of just three core members: the stack pointer (line 79), the timeout tick counter (line 80), and the priority value (line 81). The remaining data members are auxiliary and appear only when additional features are enabled&nbsp;– such as the ability to interrupt and restart a process at any point, or debugging support[^3].
 
 [^3]: This applies to the rest of the code as well—the majority of the class definition is devoted to these optional capabilities.
 
@@ -102,13 +134,14 @@ The class interface provides the following functions:
 * `is_sleeping()`. Checks whether the process is sleeping (i.e., waiting for an event with a timeout).
 * `is_suspended()`. Checks whether the process is in a suspended (inactive) state.
 
+<a name="process-stack"></a>
 ### Stack
 
 A process stack is a contiguous region of RAM used to store process data, save the process context, and hold return addresses from functions and interrupts.
 
-Due to architectural features of some processors, two separate stacks may be used—one for data and one for return addresses. **scmRTOS** supports this capability, allowing each process object to contain two distinct RAM regions (two stacks), with sizes specified individually based on application requirements. Support for separate stacks is enabled via the `SEPARATE_RETURN_STACK` macro defined in `os_target.h`.
+Due to architectural features of some processors, two separate stacks may be used&nbsp;– one for data and one for return addresses. **scmRTOS** supports this capability, allowing each process object to contain two distinct RAM regions (two stacks), with sizes specified individually based on application requirements. Support for separate stacks is enabled via the `SEPARATE_RETURN_STACK` macro defined in `os_target.h`.
 
-Within a protected section, a critically important function `init_stack_frame()` is declared, responsible for constructing the initial stack frame. The reason is that process executable functions do not start like ordinary functions—they are not called in the traditional way. Control reaches them through the same mechanism used for context switches between processes. Therefore, starting a process involves restoring its context from the stack followed by a jump to the address stored as the saved interrupt return point.
+Within a protected section, a critically important function `init_stack_frame()` is declared, responsible for constructing the initial stack frame. The reason is that process executable functions do not start like ordinary functions&nbsp;– they are not called in the traditional way. Control reaches them through the same mechanism used for context switches between processes. Therefore, starting a process involves restoring its context from the stack followed by a jump to the address stored as the saved interrupt return point.
 
 To enable this startup method, the process stack must be prepared accordingly: specific memory cells in the stack are initialized with required values, making the stack appear as if the process had previously been preempted (with its context properly saved). The exact steps for preparing the stack frame are platform-specific, so the implementation of `init_stack_frame()` is delegated to the OS port layer.
 
@@ -116,24 +149,26 @@ To enable this startup method, the process stack must be prepared accordingly: s
 
 Each process has a dedicated `Timeout` variable to control its behavior during event waits with timeouts or during sleep. Essentially, this variable acts as a down-counter of system timer ticks. When its value is non-zero, it is decremented in the system timer interrupt handler and tested against zero. Upon reaching zero, the owning process is marked ready to run.
 
-Thus, if a process is put to sleep with a timeout (i.e., removed from the ready map via `sleep(timeout)` with a non-zero argument), it will be automatically awakened[^5] in the system timer interrupt handler after an interval corresponding to the specified number of system ticks[^4].
+Thus, if a process is put to sleep with a timeout (i.e., removed from the ready map via `sleep(timeout)` with a non-zero argument), it will be automatically awakened[^4] in the system timer interrupt handler after an interval corresponding to the specified number of system ticks[^5].
 
-[^4]: More precisely, the interval is accurate to within a fraction of one tick period, depending on the timing of the `sleep` call relative to the next timer interrupt.
+[^4]: I.e., marked ready-to-run.
 
-[^5]: I.e., marked ready to run.
+[^5]: More precisely, the interval is accurate to within a fraction of one tick period, depending on the timing of the `sleep` call relative to the next timer interrupt.
+
+
 
 The same mechanism applies when a service function is called that involves waiting for an event with a timeout. The process will be awakened either when the expected event occurs or when the timeout expires. The value returned by the service function unambiguously indicates the reason for awakening, allowing the user program to easily decide on subsequent actions.
 
 ### Priorities
 
-Each process also has a data field holding its priority. This field serves as the process identifier when manipulating processes and their internal representation—in particular, the priority is used as an index into the kernel's process pointer table, where the address of each process is stored upon registration.
+Each process also has a data field holding its priority. This field serves as the process identifier when manipulating processes and their internal representation&nbsp;– in particular, the priority is used as an index into the kernel's process pointer table, where the address of each process is stored upon registration.
 
-Priorities are unique—no two processes may share the same priority. The internal representation is an integer variable. For type safety when assigning priorities, a dedicated enumerated type `TPriority` is used.
+Priorities are unique&nbsp;– no two processes may share the same priority. The internal representation is an integer variable. For type safety when assigning priorities, a dedicated enumerated type `TPriority` is used.
 
 <a name="process-sleep"></a>
 ### The sleep() Function
 
-This function is used to transition the current process from an active state to an inactive one. If the function is called with an argument of 0 (or without specifying an argument—the function has a default argument of 0), the process will enter sleep indefinitely until it is explicitly awakened, for example, by another process using `TBaseProcess::force_wake_up()`. If called with a non-zero argument, the process will sleep for the specified number of system timer ticks, after which it will be automatically awakened (i.e., marked ready to run). In this case, the sleep can also be interrupted prematurely by another process or an interrupt handler using `TBaseProcess::wake_up()` or `TBaseProcess::force_wake_up()`.
+This function is used to transition the current process from an active state to an inactive one. If the function is called with an argument of 0 (or without specifying an argument&nbsp;– the function has a default argument of 0), the process will enter sleep indefinitely until it is explicitly awakened, for example, by another process using `TBaseProcess::force_wake_up()`. If called with a non-zero argument, the process will sleep for the specified number of system timer ticks, after which it will be automatically awakened (i.e., marked ready-to-run). In this case, the sleep can also be interrupted prematurely by another process or an interrupt handler using `TBaseProcess::wake_up()` or `TBaseProcess::force_wake_up()`.
 
 ----
 ## Creating and Using a Process
@@ -142,24 +177,24 @@ This function is used to transition the current process from an active state to 
 
 To create a process, its type must be defined and an object of that type declared.
 
-A concrete process type is described using the `OS::process` template—see "Listing 2. Process Template".
+A concrete process type is described using the `OS::process` template, see "Listing 2. Process Template".
 
 ```cpp
-01 template<TPriority pr, size_t stack_size>
-02 class process : public TBaseProcess
-03 {
-04 public:
-05     INLINE_PROCESS_CTOR process();
-06
-07     OS_PROCESS static void exec();
-08
-09 #if scmRTOS_PROCESS_RESTART_ENABLE == 1
-10     INLINE void terminate();
-11 #endif
-12
-13 private:
-14     stack_item_t Stack[stack_size/sizeof(stack_item_t)];
-15 };
+01    template<TPriority pr, size_t stk_size, TProcessStartState pss = pssRunning> 
+02    class process : public TBaseProcess                                          
+03    {                                                                            
+04    public:                                                                      
+05        INLINE_PROCESS_CTOR process( const char * name_str = 0 );                
+06                                                                                 
+07        OS_PROCESS static void exec();                                           
+08                                                                                 
+09    #if scmRTOS_PROCESS_RESTART_ENABLE == 1                                      
+10        INLINE void terminate();                                                 
+11    #endif                                                                       
+12                                                                                 
+13    private:                                                                     
+14        stack_item_t Stack[stk_size/sizeof(stack_item_t)];                       
+15    };                                                                           
 ```
 
 /// Caption  
@@ -176,24 +211,24 @@ As shown, two elements are added to what the base class provides:
 It is now sufficient to declare an object of this type—which becomes the process itself—and to define the process function `exec()`.
 
 ```cpp
-typedef OS::process<OS::prn, 100> Slon;
+typedef OS::process<OS::prN, 100> Slon;
 Slon slon;
 ```
 
-where `n` is the priority number.
+where `N` is the priority number.
 
-["Overview Listing 1. Process Executable Function"](overview.md#process-exec) illustrates a typical example of a process function.
+["Listing 1. Process Executable Function in Overview section"](overview.md#process-exec) illustrates a typical example of a process function.
 
 Using a process primarily involves writing user code inside the process function. As previously mentioned, a few simple rules must be followed:
 
-* Care must be taken to ensure that program flow never exits the process function. Otherwise, since this function was not called in the conventional way, upon exit the flow of control would jump to undefined addresses, leading to undefined program behavior (though in practice, the behavior is usually quite defined—the program simply stops working!).
+* Care must be taken to ensure that program flow never exits the process function. Otherwise, since this function was not called in the conventional way, upon exit the flow of control would jump to undefined addresses, leading to undefined program behavior (though in practice, the behavior is usually quite defined&nbsp;– the program simply stops working!).
 * The function `TBaseProcess::wake_up()` should be used cautiously and thoughtfully, while `TBaseProcess::force_wake_up()` requires particular care, as careless use can cause premature awakening of a sleeping (delayed) process, potentially leading to collisions in interprocess interaction.
 
 ### Starting a Process in a Suspended State
 
 Sometimes it is necessary for a process's executable function to begin execution not immediately after system startup, but only upon receiving a specific signal. For example, several processes should start working only after some equipment (possibly external to the MCU) has been initialized/configured; otherwise, incorrect actions toward that equipment could have undesirable consequences.
 
-In such cases, some form of dispatching is required—the processes must organize their operation in a way that preserves the correct interaction logic with the equipment. For instance, all processes except one (the dispatcher) could immediately wait at startup for a start event that will be signaled by the dispatcher process.
+In such cases, some form of dispatching is required&nbsp;– the processes must organize their operation in a way that preserves the correct interaction logic with the equipment. For instance, all processes except one (the dispatcher) could immediately wait at startup for a start event that will be signaled by the dispatcher process.
 
 The dispatcher process performs all necessary preparatory work and then signals the start to the waiting processes. This approach requires manually adding appropriate waiting code to each process awaiting startup, which clutters the code, increases workload, and is error-prone.
 
@@ -228,7 +263,7 @@ To support this, the OS provides two functions to the user:
 
 The `terminate()` function is intended to be called from outside the process being stopped. Inside it, all resources associated with the process are reset to their initial state, and the process is marked as not ready to run. If the process was waiting on a service, its tag is removed from that service's waiting process map.
 
-Starting the process is performed separately—allowing the user to do so at the moment they deem appropriate—using the `start()` function, which simply marks the process as ready to run. The process will resume execution according to its priority and the current OS load.
+Starting the process is performed separately&nbsp;– allowing the user to do so at the moment they deem appropriate&nbsp;– using the `start()` function, which simply marks the process as ready-to-run. The process will resume execution according to its priority and the current OS load.
 
 For process termination and restart to work correctly, this feature must be enabled during configuration—the macro `scmRTOS_PROCESS_RESTART_ENABLE` must be set to 1.
 
