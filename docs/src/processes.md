@@ -180,21 +180,21 @@ To create a process, its type must be defined and an object of that type declare
 A concrete process type is described using the `OS::process` template, see "Listing 2. Process Template".
 
 ```cpp
-01    template<TPriority pr, size_t stk_size, TProcessStartState pss = pssRunning> 
-02    class process : public TBaseProcess                                          
-03    {                                                                            
-04    public:                                                                      
-05        INLINE_PROCESS_CTOR process( const char * name_str = 0 );                
-06                                                                                 
-07        OS_PROCESS static void exec();                                           
-08                                                                                 
-09    #if scmRTOS_PROCESS_RESTART_ENABLE == 1                                      
-10        INLINE void terminate();                                                 
-11    #endif                                                                       
-12                                                                                 
-13    private:                                                                     
-14        stack_item_t Stack[stk_size/sizeof(stack_item_t)];                       
-15    };                                                                           
+01    template<TPriority pr, size_t stk_size, TProcessStartState pss = pssRunning>     
+02    class process : public TBaseProcess                                              
+03    {                                                                                
+04    public:                                                                          
+05        INLINE_PROCESS_CTOR process( const char * name_str = 0, void (*func)() = 0 );
+06                                                                                     
+07        OS_PROCESS static void exec();                                               
+08                                                                                     
+09    #if scmRTOS_PROCESS_RESTART_ENABLE == 1                                          
+10        INLINE void terminate( void (*func)() = 0 );                                 
+11    #endif                                                                           
+12                                                                                     
+13    private:                                                                         
+14        stack_item_t Stack[stk_size/sizeof(stack_item_t)];                           
+15    };                                                                               
 ```
 
 /// Caption  
@@ -223,6 +223,90 @@ Using a process primarily involves writing user code inside the process function
 
 * Care must be taken to ensure that program flow never exits the process function. Otherwise, since this function was not called in the conventional way, upon exit the flow of control would jump to undefined addresses, leading to undefined program behavior (though in practice, the behavior is usually quite defined&nbsp;– the program simply stops working!).
 * The function `TBaseProcess::wake_up()` should be used cautiously and thoughtfully, while `TBaseProcess::force_wake_up()` requires particular care, as careless use can cause premature awakening of a sleeping (delayed) process, potentially leading to collisions in interprocess interaction.
+
+<a name="process-alternate-exec"></a>
+#### Alternative Ways to Declare a Process Object
+
+##### External Function
+
+When declaring a process object, a pointer to an external function of type `void func()` can be passed to the constructor; in this case, that function will serve as the process executable function, see "Listing 3. Using an external function as the executable".
+
+```cpp
+01    OS_PROCESS void slon_exec();          
+02                                          
+03    Slon slon("Slon Process", &slon_exec);
+04                                          
+05    void slon_exec()                      
+06    {                                     
+07        ... // Declarations               
+08        ... // Init process’s data        
+09        for(;;)                           
+10        {                                 
+11            ... // process’s main loop    
+12        }                                 
+13    }                                     
+```
+/// Caption
+Listing 3. Using an external function as the executable
+///
+
+The advantage of this approach is a more concise notation without the need to specify full template specialization (`template<>`) and the namespace `OS`, which are required when using the member function `process::exec()`.
+
+##### Executable Function as a Process Constructor Argument
+
+In addition to a regular function, an anonymous function with the required signature can be passed to the process&nbsp;– this is implemented in C++ using lambda functions, see "Listing 4. Lambda Function as Process Executable Function".
+
+```cpp
+01    Slon slon("Slon Process", []      
+02    {                                 
+03        ... // Declarations           
+04        ... // Init process’s data    
+05        for(;;)                       
+06        {                             
+07            ... // process’s main loop
+08        }                             
+09    });                               
+```
+/// Caption
+Listing 4. Lambda Function as Process Executable Function
+///
+
+The main advantage of this method is its conciseness: the process object and its executable function are contained in a single expression.
+
+!!! warning "**NOTE**"
+
+    Referring to "Listing 2. Process Template" (line 5), it can be seen that when an external function is used as the executable, the process name must also be specified&nbsp;– this is a requirement of C++ language syntax (default argument rules).
+    
+    In practice, the process name is used only for debugging purposes, so it is not mandatory, and the question may arise about additional overhead when the name is not needed. However, the process constructor implementation is such that no overhead occurs, see "Listing 5. Process Constructor".
+
+    From the listing, it is evident that the process name is used only when debugging is enabled (line 04); otherwise, the `const char *` argument becomes unnamed and is removed from the code, so no overhead is introduced.
+
+```cpp
+01    template<TPriority pr, size_t stk_size, TProcessStartState pss>
+02    OS::process<pr, stk_size, pss>::process( const char *          
+03        #if scmRTOS_DEBUG_ENABLE == 1                              
+04        name_str                                                   
+05        #endif                                                     
+06        , void (*func)()                                           
+07        ) : TBaseProcess(&Stack[stk_size / sizeof(stack_item_t)]   
+08                         , pr                                      
+09                         , func ? func : exec                      
+10                      #if scmRTOS_DEBUG_ENABLE == 1                
+11                         , Stack                                   
+12                         , name_str                                
+13                      #endif                                       
+14                         )                                         
+15                                                                   
+16    {                                                              
+17        #if scmRTOS_SUSPENDED_PROCESS_ENABLE != 0                  
+18        if ( pss == pssSuspended )                                 
+19            clr_prio_tag(SuspendedProcessMap, get_prio_tag(pr));   
+20        #endif                                                     
+21    }                                                              
+```
+/// Caption
+Listing 5. Process Constructor
+///
 
 ### Starting a Process in a Suspended State
 
@@ -261,10 +345,21 @@ To support this, the OS provides two functions to the user:
 * `OS::process::terminate()`;
 * `OS::TBaseProcess::start()`.
 
+#### Terminate Process Execution
+
 The `terminate()` function is intended to be called from outside the process being stopped. Inside it, all resources associated with the process are reset to their initial state, and the process is marked as not ready to run. If the process was waiting on a service, its tag is removed from that service's waiting process map.
+
+The `terminate()` function can accept a pointer to a function as an argument; this function will serve as the executable entry point for the process on the next start. This provides considerable flexibility in program implementation&nbsp;– on each restart, the exact executable function required in the current program context can be specified.
+
+!!! tip "**TIP**"
+    The ability to specify the executable function on restart can be effectively used to simulate process deletion and creation&nbsp;– some libraries are designed to require dynamic resource allocation for their operation, in particular the creation of processes to perform tasks followed by their deletion.
+    
+    **scmRTOS** does not support dynamic process creation and deletion for reasons [described earlier](overview.md#avoid-dynamic-process), but creation/deletion can be simulated, for example by organizing a pool of processes from which an available process can be taken when needed and assigned an appropriate executable function.
+    
+    Changing process priorities or stack sizes is not possible—these parameters are set statically during OS configuration—but in many cases this is not required, since the resources needed to perform tasks are usually known at build time.
+
+#### Start Process Execution
 
 Starting the process is performed separately&nbsp;– allowing the user to do so at the moment they deem appropriate&nbsp;– using the `start()` function, which simply marks the process as ready-to-run. The process will resume execution according to its priority and the current OS load.
 
 For process termination and restart to work correctly, this feature must be enabled during configuration—the macro `scmRTOS_PROCESS_RESTART_ENABLE` must be set to 1.
-
-

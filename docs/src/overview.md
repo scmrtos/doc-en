@@ -4,11 +4,14 @@
 
 **scmRTOS** is a real-time operating system featuring priority-based preemptive multitasking. The OS supports up to 32 processes (including the system **IdleProc** process, i.e., up to 31 user processes), each with a unique priority. All processes are static, meaning their number is defined at the project build stage and they cannot be added or removed at runtime.
 
+<a name="avoid-dynamic-process"></a>
 The decision to forgo dynamic process creation is driven by resource conservation considerations, as resources in single-chip microcontrollers are limited. Dynamic process deletion is also not implemented, as it offers little benefit—the program memory used by the process is not freed, and RAM for subsequent use would require allocation/deallocation via a memory manager, which is a complex component that consumes significant resources and is generally not used in single-chip microcontroller projects[^1].
 
 In the current version, process priorities are also static: each process is assigned a priority at the project build stage, and the priority cannot be changed during program execution. This approach is motivated by the goal of making the system as lightweight as possible in terms of resource requirements while maintaining high responsiveness. Changing priorities during system operation is a non-trivial mechanism that, for correct operation, requires analyzing the state of the entire system (kernel, services) followed by modifications to kernel components and other OS parts (semaphores, event flags, etc.). This inevitably leads to prolonged periods with interrupts disabled, significantly degrading the system's dynamic characteristics.
 
-[^1]: This refers to the standard memory manager typically provided with development tools. There are situations where program operation requires storing data between function calls (i.e., automatic storage on the stack or in CPU registers is unsuitable), and the amount of such data is unknown at compile time—their creation and lifetime are determined by events occurring at runtime. The best approach for storing such data is in free memory—the "heap." These operations are usually handled by a memory manager. Thus, some applications cannot do without it, but given the resource consumption of standard memory managers, their use is often unacceptable. In such cases, a specialized memory manager tailored to the application's needs is frequently employed. Considering the above, creating a universal memory manager equally suitable for diverse projects is impractical, which explains the absence of a memory manager in **scmRTOS**.
+[^1]: This refers to the standard memory manager typically provided with development tools. There are situations where program operation requires storing data between function calls (i.e., automatic storage on the stack or in CPU registers is unsuitable), and the amount of such data is unknown at compile time—their creation and lifetime are determined by events occurring at runtime. The best approach for storing such data is in free memory—the "heap." These operations are usually handled by a memory manager.Thus, some applications cannot do without it, but given the resource consumption of standard memory managers, their use is often unacceptable.
+
+    In such cases, a specialized memory manager tailored to the application's needs is frequently employed. Considering the above, creating a universal memory manager equally suitable for diverse projects is impractical, which explains the absence of a memory manager in **scmRTOS**.
 
 ## OS Structure
 
@@ -28,7 +31,9 @@ For more details on the kernel's structure, composition, functions, and mechanis
 
 ### Processes
 
-Processes enable the creation of independent (asynchronous relative to others) threads of execution in the program. Each process provides a function that must contain an infinite loop serving as the process's main loop, see "Listing 1. Process Execution Function" for an example.
+Processes provide the ability to create a separate (asynchronous with respect to the others) flow of control in the program, which is implemented as a function associated with the process. Such a function is called the *process executable function*.
+
+The executable function must contain an infinite loop that serves as the main loop of the process, see "Listing 1. Process executable function" for an example.
 
 <a name="process-exec"></a>
 ```cpp
@@ -50,6 +55,11 @@ Listing 1. Process Execution Function
 Upon system startup, control is transferred to the process function, where declarations of used data (line 3) and initialization code (line 4) can be placed at the beginning, followed by the process's main loop (lines 5–8). User code must be written to prevent exiting the process function. For example, once entering the main loop, do not leave it (the primary approach), or if exiting the main loop, enter another loop (even an empty one) or an infinite "sleep" by calling the `sleep()` function[^2] without parameters (or with parameter "0")—see [The sleep() Function](processes.md#process-sleep) for details. The process code must not contain `return` statements.
 
 [^2]: In this case, no other process should "wake" this sleeping process before exit, as it would lead to undefined behavior and likely cause the system to crash. The only safe action applicable to a process in this state is to terminate it (with the option to restart from the beginning); see [Process Restart](processes.md#process-restart).
+
+!!! info "**NOTE**"
+    In the example shown, the role of the process executable function is played by the `exec()` function&nbsp;– a static member function of the class that describes the process type. This is not the only way to define a process executable function: in addition to a static member function, any function of the form `void fun()` can be used, whose address must be passed to the process constructor. This includes the ability to inline the function body as a constructor argument using the C++ lambda function mechanism. For more details see ["Alternative Ways to Declare a Process Object"](processes.md#process-alternate-exec)
+
+
 
 ### Interprocess Communication
 
