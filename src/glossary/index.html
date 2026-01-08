@@ -66,7 +66,7 @@
               <ul class="current">
                   <li class="toctree-l1"><a class="reference internal" href="../debug/">Debug</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Performance Profiling</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Profiling</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../example-job-queue/">Example: Job Queue</a>
                   </li>
@@ -78,9 +78,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#critical-section">Critical Section</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#ec">EC++</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#idle-process-background-process">Idle Process (Background Process)</a>
+    <li class="toctree-l2"><a class="reference internal" href="#idle-process-rtos-background-process">Idle Process (RTOS Background Process)</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#interprocess-communication-ipc-services">Interprocess Communication (IPC) Services</a>
     </li>
@@ -94,11 +92,11 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#operating-system-process">Operating System Process</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#os-extensions">OS Extensions</a>
-    </li>
     <li class="toctree-l2"><a class="reference internal" href="#os">OS</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#os-configuration">OS Configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#os-extensions">OS Extensions</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#os-port">OS Port</a>
     </li>
@@ -169,29 +167,27 @@
 <h4 id="c_1">C++<a class="headerlink" href="#c_1" title="Permanent link">🔗</a></h4>
 <p>A general-purpose programming language supporting procedural, object-based, and object-oriented programming paradigms.</p>
 <h4 id="critical-section">Critical Section<a class="headerlink" href="#critical-section" title="Permanent link">🔗</a></h4>
-<p>A code fragment during whose execution control transfer is prohibited. In <strong>scmRTOS</strong>, this is currently implemented in the simplest way—by globally disabling interrupts.</p>
-<h4 id="ec">EC++<a class="headerlink" href="#ec" title="Permanent link">🔗</a></h4>
-<p>Embedded C++—a subset of C++. It excludes namespaces, templates, multiple inheritance, RTTI, exception handling, and the newer explicit type conversion syntax.</p>
-<h4 id="idle-process-background-process">Idle Process (Background Process)<a class="headerlink" href="#idle-process-background-process" title="Permanent link">🔗</a></h4>
+<p>A code fragment during whose execution control transfer is prohibited. In <strong>scmRTOS</strong>, this is currently implemented in the simplest way by globally disabling interrupts.</p>
+<h4 id="idle-process-rtos-background-process">Idle Process (RTOS Background Process)<a class="headerlink" href="#idle-process-rtos-background-process" title="Permanent link">🔗</a></h4>
 <p>A system process that receives control when all user processes are waiting for events. This process cannot enter a waiting state and may execute a user hook if enabled during configuration.</p>
 <h4 id="interprocess-communication-ipc-services">Interprocess Communication (IPC) Services<a class="headerlink" href="#interprocess-communication-ipc-services" title="Permanent link">🔗</a></h4>
 <p>Objects and/or OS extensions designed for safe interaction (work synchronization and data exchange) between different processes, as well as for organizing event-driven program execution based on events occurring in interrupts and processes.</p>
 <h4 id="interrupt-stack">Interrupt Stack<a class="headerlink" href="#interrupt-stack" title="Permanent link">🔗</a></h4>
 <p>A specially allocated RAM area intended for use as a stack during execution of interrupt handler code. When an interrupt stack is used, the processor's stack pointer is switched to the interrupt stack upon entering an interrupt handler and switched back to the process stack upon exit.</p>
 <h4 id="isr">ISR<a class="headerlink" href="#isr" title="Permanent link">🔗</a></h4>
-<p>Interrupt Service Routine—an interrupt handler.</p>
+<p>Interrupt Service Routine&nbsp;– an interrupt handler.</p>
 <h4 id="kernel">Kernel<a class="headerlink" href="#kernel" title="Permanent link">🔗</a></h4>
 <p>The most important and central part of the operating system, responsible for organizing processes, scheduling their execution, supporting interprocess communication, managing system time, and handling OS extensions.</p>
 <h4 id="mcu">MCU<a class="headerlink" href="#mcu" title="Permanent link">🔗</a></h4>
 <p>Microcontroller.</p>
 <h4 id="operating-system-process">Operating System Process<a class="headerlink" href="#operating-system-process" title="Permanent link">🔗</a></h4>
 <p>An object that implements the execution of a complete, independent program fragment asynchronous to others, including support for control transfer at both the process level and the interrupt level.</p>
-<h4 id="os-extensions">OS Extensions<a class="headerlink" href="#os-extensions" title="Permanent link">🔗</a></h4>
-<p>Software objects that extend the functionality of the operating system but are not part of the core OS. An example of an extension is the process activity profiler.</p>
 <h4 id="os">OS<a class="headerlink" href="#os" title="Permanent link">🔗</a></h4>
 <p>Operating System.</p>
 <h4 id="os-configuration">OS Configuration<a class="headerlink" href="#os-configuration" title="Permanent link">🔗</a></h4>
 <p>The set of macros, types, other definitions, and declarations that specify the quantitative and qualitative characteristics and properties of the operating system in a specific project. Configuration is performed by defining the contents of special header configuration files and by certain user code executed before OS startup.</p>
+<h4 id="os-extensions">OS Extensions<a class="headerlink" href="#os-extensions" title="Permanent link">🔗</a></h4>
+<p>Software objects that extend the functionality of the operating system but are not part of the core OS. An example of an extension is <a href="../profiler/">the process activity profiler</a>.</p>
 <h4 id="os-port">OS Port<a class="headerlink" href="#os-port" title="Permanent link">🔗</a></h4>
 <p>The combination of common and platform-dependent OS code adapted to a specific software and hardware platform.</p>
 <h4 id="preemption">Preemption<a class="headerlink" href="#preemption" title="Permanent link">🔗</a></h4>
@@ -213,7 +209,7 @@
 <h4 id="ram">RAM<a class="headerlink" href="#ram" title="Permanent link">🔗</a></h4>
 <p>Random Access Memory.</p>
 <h4 id="ring-buffer">Ring Buffer<a class="headerlink" href="#ring-buffer" title="Permanent link">🔗</a></h4>
-<p>A data object representing a queue. It has two data ports (access functions)—an input for writing and an output for reading. Implemented using an array and two indices (pointers) denoting the start and end of the queue. Upon reaching the physical end of the array, writing/reading wraps to the beginning, hence the name.</p>
+<p>A data object representing a queue. It has two data ports (access functions): an input for writing and an output for reading. Implemented using an array and two indices (pointers) denoting the start and end of the queue. Upon reaching the physical end of the array, writing/reading wraps to the beginning, hence the name.</p>
 <h4 id="rtos">RTOS<a class="headerlink" href="#rtos" title="Permanent link">🔗</a></h4>
 <p>Real-Time Operating System.</p>
 <h4 id="scheduler">Scheduler<a class="headerlink" href="#scheduler" title="Permanent link">🔗</a></h4>

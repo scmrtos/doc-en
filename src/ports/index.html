@@ -84,7 +84,7 @@
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../debug/">Debug</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Performance Profiling</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../profiler/">Process Profiling</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../example-job-queue/">Example: Job Queue</a>
                   </li>
@@ -118,7 +118,7 @@
                 <h1 id="ports">Ports<a class="headerlink" href="#ports" title="Permanent link">🔗</a></h1>
 <h2 id="general-notes">General Notes<a class="headerlink" href="#general-notes" title="Permanent link">🔗</a></h2>
 <p>Due to significant differences in both hardware architectures and the development tools targeting them, adaptation of the OS code<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> to specific platforms is required. The result of this effort is the platform-specific portion, which, together with the common core, constitutes the complete port for a given platform. The process of preparing the platform-specific portion is referred to as porting.</p>
-<p>This chapter primarily examines the platform-specific components, their contents and characteristics, and provides brief instructions for porting the OS—i.e., the steps required to create a new port.</p>
+<p>This chapter primarily examines the platform-specific components, their contents and characteristics, and provides brief instructions for porting the OS&nbsp;– i.e., the steps required to create a new port.</p>
 <p>The platform-specific code for each target platform is contained in a separate directory and minimally includes three files:</p>
 <ul>
 <li><code>os_target.h</code> – platform-specific declarations and macros.</li>
@@ -127,13 +127,13 @@
 </ul>
 <p>Configuration of the OS code for a target platform is achieved through:</p>
 <ul>
-<li>definition of special preprocessor macros;</li>
-<li>conditional compilation directives;</li>
-<li>definition of user-defined types whose implementation depends on the target platform;</li>
-<li>type aliases for certain types;</li>
-<li>definition of functions whose implementation is delegated to the port level.</li>
+<li>Definition of special preprocessor macros.</li>
+<li>Conditional compilation directives.</li>
+<li>Definition of user-defined types whose implementation depends on the target platform.</li>
+<li>Type aliases for certain types.</li>
+<li>Definition of functions whose implementation is delegated to the port level.</li>
 </ul>
-<p>A critical and delicate part of the port code involves the implementation of assembly-language subroutines responsible for system startup, saving the context of the interrupted process, switching stack pointers, and restoring the context of the process gaining control—including the software interrupt handler that performs context switching. Implementing this code requires the port developer to have in-depth knowledge of the target hardware architecture at a low level, as well as proficiency in using the toolchain (compiler, assembler, linker) for mixed-language<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> projects.</p>
+<p>A critical and delicate part of the port code involves the implementation of assembly-language subroutines responsible for system startup, saving the context of the interrupted process, switching stack pointers, and restoring the context of the process gaining control, including the software interrupt handler that performs context switching. Implementing this code requires the port developer to have in-depth knowledge of the target hardware architecture at a low level, as well as proficiency in using the toolchain (compiler, assembler, linker) for mixed-language<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> projects.</p>
 <p>The porting process primarily consists of identifying the required porting objects and implementing the platform-specific code.</p>
 <h2 id="porting-objects">Porting Objects<a class="headerlink" href="#porting-objects" title="Permanent link">🔗</a></h2>
 <h3 id="macros">Macros<a class="headerlink" href="#macros" title="Permanent link">🔗</a></h3>
@@ -164,7 +164,8 @@
 <hr />
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">CONTEXT_SWITCH_HOOK_CRIT_SECT</span>
 </span></code></pre></div>
-<p>Determines whether the context switch hook executes within a critical section. It is essential that the hook executes atomically with respect to kernel variable manipulation (particularly <code>SchedProcPriority</code>), meaning the scheduler must not be invoked during hook execution. Scheduler invocation can occur from interrupts if the processor has a hardware prioritized interrupt controller and the software context-switch interrupt has lower priority than others. In such cases, the hook code must run in a critical section, and the macro should be defined as <code>TCritSect cs</code>. This is a critical consideration&nbsp;—&nbsp;failure to address it properly can lead to elusive runtime errors, requiring careful attention during porting.</p>
+<p>Determines whether the context switch hook executes within a critical section. It is essential that the hook executes atomically with respect to kernel variable manipulation (particularly <code>SchedProcPriority</code>), meaning the scheduler must not be invoked during hook execution. Scheduler invocation can occur from interrupts if the processor has a hardware prioritized interrupt controller and the software context-switch interrupt has lower priority than others.</p>
+<p>In such cases, the hook code must run in a critical section, and the macro should be defined as <code>TCritSect cs</code>. This is a critical consideration: failure to address it properly can lead to elusive runtime errors, requiring careful attention during porting.</p>
 <hr />
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">SEPARATE_RETURN_STACK</span>
 </span></code></pre></div>
@@ -173,7 +174,7 @@
 <h3 id="types">Types<a class="headerlink" href="#types" title="Permanent link">🔗</a></h3>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">stack_item_t</span>
 </span></code></pre></div>
-<p>Type alias for the built-in type representing a stack element on the target processor.</p>
+<p>Type alias for the built-in type representing a stack item on the target processor.</p>
 <hr />
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">status_reg_t</span>
 </span></code></pre></div>
@@ -230,15 +231,15 @@
 <p>Porting typically requires defining all the macros, types, and functions listed above for the target platform.</p>
 <p>The most delicate and critical tasks involve implementing the assembly code and the stack frame initialization function. Key aspects requiring particular attention include:</p>
 <ul>
-<li>determining the calling conventions used by the compiler to identify which registers (or stack areas) are used for passing arguments of various types;</li>
-<li>understanding how the processor handles saving of return addresses and status registers upon interrupt occurrence—this is essential for correct stack frame formation on the target platform, which in turn is necessary for implementing context switch functions/handlers and stack frame initialization;</li>
-<li>verifying the name mangling scheme for exported/imported symbols in assembly. In the simplest case, C names (and <code>"extern C"</code> names in C++) are visible unchanged in assembly, but on some platforms<sup id="fnref:7"><a class="footnote-ref" href="#fn:7">6</a></sup> prefixes and/or suffixes may be added, requiring assembly functions to be named accordingly for correct linker resolution.</li>
+<li>Determining the calling conventions used by the compiler to identify which registers (or stack areas) are used for passing arguments of various types.</li>
+<li>Understanding how the processor handles saving of return addresses and status registers upon interrupt occurrence&nbsp;– this is essential for correct stack frame construction on the target platform, which in turn is necessary for implementing context switch functions/handlers and stack frame initialization.</li>
+<li>Verifying the name mangling scheme for exported/imported symbols in assembly. In the simplest case, C names (and <code>"extern C"</code> names in C++) are visible unchanged in assembly, but on some platforms<sup id="fnref:7"><a class="footnote-ref" href="#fn:7">6</a></sup> prefixes and/or suffixes may be added, requiring assembly functions to be named accordingly for correct linker resolution.</li>
 </ul>
-<p>All assembly code should be placed in the file <code>os_target_asm.ext</code> mentioned earlier. Macro and type definitions, along with inline functions, belong in <code>os_target.h</code>. The file <code>os_target.cpp</code> should declare type objects if needed (e.g., <code>OS::TPrioMaskTable OS::PrioMaskTable</code>) and define <code>TBaseProcess::init_stack_frame()</code> and the system timer interrupt handler <code>system_timer_isr()</code>.</p>
+<p>All assembly code should be placed in the file <code>os_target_asm.ext</code> mentioned earlier. Macro and type definitions, along with inline functions, belong in <code>os_target.h</code>. The file <code>os_target.cpp</code> should declare type objects if needed (e.g., <code>OS::TPrioMaskTable OS::PrioMaskTable</code>), define <code>TBaseProcess::init_stack_frame()</code> and the system timer interrupt handler <code>system_timer_isr()</code>.</p>
 <p>The above provides only general information related to OS ports. Porting involves numerous specific nuances whose detailed description is beyond the scope of this document.</p>
 <div class="admonition tip">
 <p class="admonition-title"><strong>TIP</strong></p>
-<p>When creating a new port, it is advisable to use an existing port as a template or reference—this significantly simplifies the process. The choice of reference port depends on the architectural and toolchain similarity between the existing port and the target platform.</p>
+<p>When creating a new port, it is advisable to use an existing port as a template or reference&nbsp;– this significantly simplifies the process. The choice of reference port depends on the architectural and toolchain similarity between the existing port and the target platform.</p>
 </div>
 <h2 id="integration-into-a-working-project">Integration into a Working Project<a class="headerlink" href="#integration-into-a-working-project" title="Permanent link">🔗</a></h2>
 <p>To enhance flexibility and efficiency, certain platform-specific code that depends on project-specific details and the particular microcontroller used is delegated to the project level. This typically includes selection of the hardware timer used as the system timer and, where applicable, the context-switch interrupt when the processor lacks a dedicated software interrupt.</p>
@@ -248,7 +249,7 @@
 <li><code>scmRTOS_target_cfg.h</code>;</li>
 </ul>
 <p>The file <code>scmRTOS_config.h</code> contains most configuration macros defining parameters such as the number of processes, context switch method, enabling of system time functions, user hook support, priority value ordering, and similar settings.</p>
-<p>The file <code>scmRTOS_target_cfg.h</code> contains code for managing target processor resources selected for system functions—primarily the system timer and context-switch interrupt.</p>
+<p>The file <code>scmRTOS_target_cfg.h</code> contains code for managing target processor resources selected for system functions&nbsp;– primarily the system timer and context-switch interrupt.</p>
 <p>The contents of both configuration files are described in detail in documents specific to individual ports.</p>
 <div class="footnote">
 <hr />
