@@ -461,7 +461,7 @@
 <p>The auxiliary functions include:</p>
 <ol>
 <li><code>TService::cur_proc_prio_tag()</code>. Returns the tag<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> corresponding to the currently active process. This tag is actively used by the core service functions to record process identifiers<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> when placing the current process into a waiting state.</li>
-<li><code>TService::highest_prio_tag()</code>. Returns the tag of the highest-priority process from the process map passed as an argument. It is primarily used to obtain the identifier (of the process) from those recorded in the service object's process map, identifying the process that should be marked ready to run.</li>
+<li><code>TService::highest_prio_tag()</code>. Returns the tag of the highest-priority process from the process map passed as an argument. It is primarily used to obtain the identifier (of the process) from those recorded in the service object's process map, identifying the process that should be marked ready-to-run.</li>
 </ol>
 <p>The core functions are:</p>
 <ol>
@@ -573,7 +573,7 @@
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">INLINE</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">TEventFlag</span><span class="o">::</span><span class="n">signal</span><span class="p">();</span>
 </span></code></pre></div>
 <h6 id="description_1">Description<a class="headerlink" href="#description_1" title="Permanent link">🔗</a></h6>
-<p>A process that wishes to notify other processes via a <code>TEventFlag</code> object that a particular event has occurred must call <code>signal()</code>. This marks all processes waiting for the event as ready to run, and control is immediately transferred to the highest-priority one among them (the others will run in priority order).</p>
+<p>A process that wishes to notify other processes via a <code>TEventFlag</code> object that a particular event has occurred must call <code>signal()</code>. This marks all processes waiting for the event as ready-to-run, and control is immediately transferred to the highest-priority one among them (the others will run in priority order).</p>
 <hr />
 <h4 id="signal-from-isr"><u>signal from ISR</u><a class="headerlink" href="#signal-from-isr" title="Permanent link">🔗</a></h4>
 <h6 id="prototype_2">Prototype<a class="headerlink" href="#prototype_2" title="Permanent link">🔗</a></h6>
@@ -833,7 +833,7 @@
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">INLINE</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">OS</span><span class="o">::</span><span class="n">TBaseMessage</span><span class="o">::</span><span class="n">send</span><span class="p">();</span>
 </span></code></pre></div>
 <h6 id="description_11">Description<a class="headerlink" href="#description_11" title="Permanent link">🔗</a></h6>
-<p>Send the message<sup id="fnref:19"><a class="footnote-ref" href="#fn:19">19</a></sup>: the operation marks all processes waiting for the message as ready to run and invokes the scheduler.</p>
+<p>Send the message<sup id="fnref:19"><a class="footnote-ref" href="#fn:19">19</a></sup>: the operation marks all processes waiting for the message as ready-to-run and invokes the scheduler.</p>
 <hr />
 <h4 id="send-from-isr"><u>send from ISR</u><a class="headerlink" href="#send-from-isr" title="Permanent link">🔗</a></h4>
 <h6 id="prototype_12">Prototype<a class="headerlink" href="#prototype_12" title="Permanent link">🔗</a></h6>
