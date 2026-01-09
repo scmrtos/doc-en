@@ -73,7 +73,7 @@ Like its parent class `TKernelAgent`, the `TService` class does not allow instan
 The auxiliary functions include:
 
 1. `TService::cur_proc_prio_tag()`. Returns the tag[^3] corresponding to the currently active process. This tag is actively used by the core service functions to record process identifiers[^4] when placing the current process into a waiting state.
-2. `TService::highest_prio_tag()`. Returns the tag of the highest-priority process from the process map passed as an argument. It is primarily used to obtain the identifier (of the process) from those recorded in the service object's process map, identifying the process that should be marked ready to run.
+2. `TService::highest_prio_tag()`. Returns the tag of the highest-priority process from the process map passed as an argument. It is primarily used to obtain the identifier (of the process) from those recorded in the service object's process map, identifying the process that should be marked ready-to-run.
 
 [^3]: A process tag is technically a mask of type `TProcessMap` with only one non-zero bit. The position of this bit in the mask corresponds to the process priority. Process tags are used to manipulate `TProcessMap` objects, which represent process readiness/unreadiness for execution, as well as to record process tags.
 [^4]: Alongside the process priority number, the tag can also serve as a process identifier&nbsp;– there is a one-to-one correspondence between a process priority and its tag. Each identifier type has efficiency advantages in specific situations, so both are extensively used in the OS code.
@@ -235,7 +235,7 @@ INLINE void OS::TEventFlag::signal();
 ```
 
 ###### Description
-A process that wishes to notify other processes via a `TEventFlag` object that a particular event has occurred must call `signal()`. This marks all processes waiting for the event as ready to run, and control is immediately transferred to the highest-priority one among them (the others will run in priority order).
+A process that wishes to notify other processes via a `TEventFlag` object that a particular event has occurred must call `signal()`. This marks all processes waiting for the event as ready-to-run, and control is immediately transferred to the highest-priority one among them (the others will run in priority order).
 
 ----
 #### <u>signal from ISR</u>
@@ -572,7 +572,7 @@ INLINE void OS::TBaseMessage::send();
 ```
 
 ###### Description
-Send the message[^19]: the operation marks all processes waiting for the message as ready to run and invokes the scheduler.
+Send the message[^19]: the operation marks all processes waiting for the message as ready-to-run and invokes the scheduler.
 
 ----
 #### <u>send from ISR</u>

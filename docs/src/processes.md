@@ -147,7 +147,7 @@ To enable this startup method, the process stack must be prepared accordingly: s
 
 ### Timeouts
 
-Each process has a dedicated `Timeout` variable to control its behavior during event waits with timeouts or during sleep. Essentially, this variable acts as a down-counter of system timer ticks. When its value is non-zero, it is decremented in the system timer interrupt handler and tested against zero. Upon reaching zero, the owning process is marked ready to run.
+Each process has a dedicated `Timeout` variable to control its behavior during event waits with timeouts or during sleep. Essentially, this variable acts as a down-counter of system timer ticks. When its value is non-zero, it is decremented in the system timer interrupt handler and tested against zero. Upon reaching zero, the owning process is marked ready-to-run.
 
 Thus, if a process is put to sleep with a timeout (i.e., removed from the ready map via `sleep(timeout)` with a non-zero argument), it will be automatically awakened[^4] in the system timer interrupt handler after an interval corresponding to the specified number of system ticks[^5].
 
@@ -347,7 +347,7 @@ To support this, the OS provides two functions to the user:
 
 #### Terminate Process Execution
 
-The `terminate()` function is intended to be called from outside the process being stopped. Inside it, all resources associated with the process are reset to their initial state, and the process is marked as not ready to run. If the process was waiting on a service, its tag is removed from that service's waiting process map.
+The `terminate()` function is intended to be called from outside the process being stopped. Inside it, all resources associated with the process are reset to their initial state, and the process is marked as not ready-to-run. If the process was waiting on a service, its tag is removed from that service's waiting process map.
 
 The `terminate()` function can accept a pointer to a function as an argument; this function will serve as the executable entry point for the process on the next start. This provides considerable flexibility in program implementation&nbsp;– on each restart, the exact executable function required in the current program context can be specified.
 
