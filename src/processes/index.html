@@ -416,7 +416,7 @@
 <p>Situations may arise where it is necessary to externally interrupt a process and restart it from the beginning. For example, a process performs lengthy computations, but at some point the results become obsolete, and a new computation cycle with fresh data must be started. This can be achieved by terminating the current execution with the ability to restart the process from scratch.</p>
 <p>To support this, the OS provides two functions to the user:</p>
 <ul>
-<li><code>OS::process::terminate()</code>;</li>
+<li><code>OS::process::terminate(void (*func)() = 0)</code>;</li>
 <li><code>OS::TBaseProcess::start()</code>.</li>
 </ul>
 <h4 id="terminate-process-execution">Terminate Process Execution<a class="headerlink" href="#terminate-process-execution" title="Permanent link">🔗</a></h4>
