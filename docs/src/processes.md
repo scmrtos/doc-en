@@ -342,7 +342,7 @@ Situations may arise where it is necessary to externally interrupt a process and
 
 To support this, the OS provides two functions to the user:
 
-* `OS::process::terminate()`;
+* `OS::process::terminate(void (*func)() = 0)`;
 * `OS::TBaseProcess::start()`.
 
 #### Terminate Process Execution
